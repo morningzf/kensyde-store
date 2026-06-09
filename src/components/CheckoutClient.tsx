@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { OrderSummary } from "@/components/OrderSummary";
@@ -17,10 +16,10 @@ const fields = [
 ] as const;
 
 export function CheckoutClient() {
-  const router = useRouter();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal } = useCart();
   const [payment, setPayment] = useState<"Stripe" | "PayPal">("Stripe");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState<Record<string, string>>({
     email: "",
     name: "",
@@ -35,34 +34,36 @@ export function CheckoutClient() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    setError("");
 
-    const orderNo = `KEN-${Date.now().toString().slice(-8)}`;
-    const shipping = items.length > 0 ? 6.95 : 0;
-    const order = {
-      orderNo,
-      items,
-      total: subtotal + shipping,
-      shipping,
-      payment,
-      customer: form
-    };
+    try {
+      if (payment !== "Stripe") {
+        throw new Error("PayPal is coming soon. Please use Credit Card / Stripe for checkout.");
+      }
 
-    window.sessionStorage.setItem("kensyde-last-order", JSON.stringify(order));
-    const response = await fetch(payment === "Stripe" ? "/api/checkout/stripe" : "/api/checkout/paypal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items })
-    });
-    const paymentData = await response.json();
-    const redirectUrl = paymentData.checkoutUrl || paymentData.approveUrl;
+      const response = await fetch("/api/checkout/stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, customer: form })
+      });
+      const paymentData = await response.json();
 
-    if (redirectUrl && paymentData.mode !== "demo") {
+      if (!response.ok) {
+        throw new Error(paymentData.error || "Unable to start checkout.");
+      }
+
+      const redirectUrl = paymentData.checkoutUrl;
+
+      if (!redirectUrl) {
+        throw new Error("Stripe Checkout URL was not returned.");
+      }
+
       window.location.href = redirectUrl;
       return;
+    } catch (checkoutError) {
+      setError(checkoutError instanceof Error ? checkoutError.message : "Unable to start checkout.");
+      setLoading(false);
     }
-
-    clearCart();
-    router.push(`/order-confirmation?order=${orderNo}`);
   };
 
   return (
@@ -114,16 +115,28 @@ export function CheckoutClient() {
                     type="button"
                     key={method.value}
                     onClick={() => setPayment(method.value)}
+                    disabled={method.value === "PayPal"}
                     className={`rounded border p-4 text-left font-heading text-sm font-semibold ${
-                      payment === method.value ? "border-navy bg-navy text-white" : "border-line bg-cream text-charcoal"
+                      payment === method.value
+                        ? "border-navy bg-navy text-white"
+                        : method.value === "PayPal"
+                          ? "cursor-not-allowed border-line bg-white text-muted"
+                          : "border-line bg-cream text-charcoal"
                     }`}
                   >
                     {method.label}
+                    {method.value === "PayPal" && <span className="mt-1 block text-xs font-medium">Coming soon</span>}
                   </button>
                 ))}
               </div>
-              <p className="mt-3 text-sm text-muted">Secure payment integration is currently in test mode.</p>
+              <p className="mt-3 text-sm text-muted">Secure checkout is processed by Stripe.</p>
             </div>
+
+            {error && (
+              <div className="mt-6 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
             <Button type="submit" variant="secondary" className="mt-8 w-full" disabled={loading || items.length === 0}>
               {loading ? "Placing order..." : "Place Order"}

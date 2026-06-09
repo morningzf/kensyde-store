@@ -6,19 +6,28 @@ import { Button } from "@/components/Button";
 
 export function ContactClient() {
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
+    setStatus("");
+    setError("");
 
     const response = await fetch("/api/contact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(Object.fromEntries(formData))
     });
+    const data = await response.json();
 
-    setStatus(response.ok ? "Message received. The KENSYDE team will follow up by email." : "Please try again.");
+    if (!response.ok) {
+      setError(data.error || "Please try again.");
+      return;
+    }
+
+    setStatus("Message sent. The KENSYDE team will follow up by email.");
     formElement.reset();
   };
 
@@ -62,6 +71,7 @@ export function ContactClient() {
             Send Message
           </Button>
           {status && <p className="mt-4 text-sm text-muted">{status}</p>}
+          {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
         </form>
       </section>
     </div>

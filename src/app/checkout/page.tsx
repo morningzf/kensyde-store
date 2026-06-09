@@ -3,7 +3,7 @@ import { pageSeo } from "@/lib/seo";
 
 export const metadata = pageSeo({
   title: "Checkout",
-  description: "Enter shipping information and choose Stripe or PayPal for your KENSYDE order.",
+  description: "Enter shipping information and complete secure Stripe checkout for your KENSYDE order.",
   path: "/checkout"
 });
 

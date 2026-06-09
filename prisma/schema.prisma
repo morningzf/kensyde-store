@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,30 +25,42 @@ model Product {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  orderNo   String      @unique
-  email     String
-  name      String
-  address   String
-  city      String
-  state     String
-  postal    String
-  country   String
-  total     Decimal
-  payment   String
-  status    String      @default("pending")
-  items     OrderItem[]
-  createdAt DateTime    @default(now())
+  id                    String      @id @default(cuid())
+  orderNumber           String      @unique
+  status                String      @default("pending")
+  customerEmail         String
+  customerName          String
+  phone                 String
+  shippingAddress       String
+  city                  String
+  state                 String
+  postalCode            String
+  country               String
+  subtotal              Decimal     @db.Decimal(10, 2)
+  shipping              Decimal     @db.Decimal(10, 2)
+  total                 Decimal     @db.Decimal(10, 2)
+  currency              String      @default("usd")
+  paymentProvider       String      @default("stripe")
+  stripeSessionId       String?     @unique
+  stripePaymentIntentId String?
+  paidAt                DateTime?
+  items                 OrderItem[]
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  sku       String
-  name      String
-  color     String
-  capacity  String
-  quantity  Int
-  unitPrice Decimal
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  orderId     String
+  sku         String
+  productName String
+  color       String
+  capacity    String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  totalPrice  Decimal @db.Decimal(10, 2)
+  image       String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }

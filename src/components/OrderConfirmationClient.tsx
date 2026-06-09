@@ -1,84 +1,137 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
-import { formatPrice, numericPrice } from "@/data/products";
-import type { CartItem } from "@/context/CartContext";
+import { useCart } from "@/context/CartContext";
+import { formatPrice } from "@/data/products";
 
-type StoredOrder = {
-  orderNo: string;
+type ConfirmedOrder = {
+  orderNumber: string;
+  status: string;
+  customerEmail: string;
   total: number;
-  payment: string;
-  items: CartItem[];
-  customer: Record<string, string>;
+  currency: string;
+  items: Array<{
+    sku: string;
+    productName: string;
+    color: string;
+    capacity: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
 };
 
 export function OrderConfirmationClient() {
   const params = useSearchParams();
-  const [order, setOrder] = useState<StoredOrder | null>(null);
+  const sessionId = params.get("session_id");
+  const { clearCart } = useCart();
+  const [order, setOrder] = useState<ConfirmedOrder | null>(null);
+  const [loading, setLoading] = useState(Boolean(sessionId));
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const stored = window.sessionStorage.getItem("kensyde-last-order");
-    if (stored) {
-      setOrder(JSON.parse(stored));
+    if (!sessionId) {
+      return;
     }
-  }, []);
 
-  const orderNo = params.get("order") || order?.orderNo || "KEN-PENDING";
+    let cancelled = false;
+
+    async function loadOrder() {
+      try {
+        const response = await fetch(`/api/orders/by-session?session_id=${encodeURIComponent(sessionId || "")}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to load order.");
+        }
+
+        if (!cancelled) {
+          setOrder(data);
+          clearCart();
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Unable to load order.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadOrder();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clearCart, sessionId]);
 
   return (
     <div className="bg-cream">
       <section className="mx-auto max-w-4xl px-5 py-16 lg:px-8">
         <div className="rounded-lg border border-line bg-white p-8 shadow-sm">
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">Order Confirmed</p>
-          <h1 className="mt-3 font-heading text-4xl font-extrabold text-navy">Thank you for choosing KENSYDE.</h1>
-          <p className="mt-4 text-muted">Order number: {orderNo}</p>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">Order Confirmation</p>
+          <h1 className="mt-3 font-heading text-4xl font-extrabold text-navy">Thank you for your order</h1>
 
-          {order ? (
+          {loading && <p className="mt-6 text-muted">Loading your order details...</p>}
+
+          {!loading && error && (
+            <div className="mt-6 rounded border border-line bg-cream p-4 text-sm text-muted">
+              Payment confirmation is processing. Please refresh in a moment.
+            </div>
+          )}
+
+          {!loading && !sessionId && (
+            <p className="mt-6 text-muted">
+              Your order details will appear here after Stripe Checkout redirects back to KENSYDE.
+            </p>
+          )}
+
+          {order && (
             <>
+              <div className="mt-8 grid gap-4 rounded border border-line bg-cream p-5 md:grid-cols-3">
+                <div>
+                  <p className="font-heading text-xs font-semibold uppercase tracking-[0.16em] text-muted">Order Number</p>
+                  <p className="mt-2 font-heading font-semibold text-navy">{order.orderNumber}</p>
+                </div>
+                <div>
+                  <p className="font-heading text-xs font-semibold uppercase tracking-[0.16em] text-muted">Payment Status</p>
+                  <p className="mt-2 font-heading font-semibold capitalize text-navy">{order.status}</p>
+                </div>
+                <div>
+                  <p className="font-heading text-xs font-semibold uppercase tracking-[0.16em] text-muted">Total</p>
+                  <p className="mt-2 font-heading font-semibold text-navy">{formatPrice(order.total)}</p>
+                </div>
+              </div>
+
+              {order.status !== "paid" && (
+                <div className="mt-6 rounded border border-line bg-cream p-4 text-sm text-muted">
+                  Payment confirmation is processing. Please refresh in a moment.
+                </div>
+              )}
+
               <div className="mt-8">
-                <h2 className="font-heading text-xl font-semibold text-navy">Purchased Products</h2>
+                <h2 className="font-heading text-xl font-semibold text-navy">Items</h2>
                 <div className="mt-4 divide-y divide-line rounded border border-line">
                   {order.items.map((item) => (
                     <div key={item.sku} className="flex justify-between gap-4 px-4 py-4 text-sm">
                       <div>
-                        <p className="font-heading font-semibold text-charcoal">{item.name}</p>
+                        <p className="font-heading font-semibold text-charcoal">{item.productName}</p>
                         <p className="mt-1 text-muted">
                           {item.color} / {item.capacity} / Qty {item.quantity}
                         </p>
                       </div>
-                      <p className="font-heading font-semibold text-navy">{formatPrice(numericPrice(item.price) * item.quantity)}</p>
+                      <p className="font-heading font-semibold text-navy">{formatPrice(item.totalPrice)}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-8 grid gap-6 md:grid-cols-2">
-                <div>
-                  <h2 className="font-heading text-xl font-semibold text-navy">Total Amount</h2>
-                  <p className="mt-3 font-heading text-2xl font-semibold text-navy">{formatPrice(order.total)}</p>
-                  <p className="mt-2 text-sm text-muted">Payment method: {order.payment}</p>
-                </div>
-                <div>
-                  <h2 className="font-heading text-xl font-semibold text-navy">Shipping Information</h2>
-                  <p className="mt-3 text-sm leading-6 text-muted">
-                    {order.customer.name}
-                    <br />
-                    {order.customer.address}
-                    <br />
-                    {order.customer.city}, {order.customer.state} {order.customer.postal}
-                    <br />
-                    {order.customer.country}
-                  </p>
-                </div>
-              </div>
+              <p className="mt-6 text-sm text-muted">A confirmation email will be sent to {order.customerEmail}.</p>
             </>
-          ) : (
-            <p className="mt-8 text-muted">
-              Your order details will appear here after checkout. Confirmation data is stored locally in this demo.
-            </p>
           )}
 
           <div className="mt-8">
