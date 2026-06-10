@@ -138,6 +138,12 @@ export async function POST(request: Request) {
         orderId: order.id,
         orderNumber
       },
+      payment_intent_data: {
+        metadata: {
+          orderId: order.id,
+          orderNumber
+        }
+      },
       line_items: [
         ...validatedItems.map((item) => ({
           quantity: item.quantity,

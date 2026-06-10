@@ -5,6 +5,25 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+async function updateOrderStatus(orderId: string | undefined, status: string) {
+  if (!orderId) {
+    return false;
+  }
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+  if (!order || order.status === "paid" || order.status === "refunded") {
+    return false;
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status }
+  });
+
+  return true;
+}
+
 export async function POST(request: Request) {
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -86,6 +105,36 @@ export async function POST(request: Request) {
         });
       } catch (emailError) {
         console.error("Order notification email failed", emailError);
+      }
+    }
+
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await updateOrderStatus(session.metadata?.orderId, "cancelled");
+    }
+
+    if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      await updateOrderStatus(paymentIntent.metadata?.orderId, "failed");
+    }
+
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId =
+        typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+
+      if (paymentIntentId) {
+        const order = await prisma.order.findFirst({
+          where: { stripePaymentIntentId: paymentIntentId }
+        });
+
+        if (order && order.status !== "refunded") {
+          const status = charge.amount_refunded >= charge.amount ? "refunded" : "partially_refunded";
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { status }
+          });
+        }
       }
     }
 
