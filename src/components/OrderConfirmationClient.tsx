@@ -23,6 +23,14 @@ type ConfirmedOrder = {
   }>;
 };
 
+const statusMessages: Record<string, string> = {
+  pending: "Payment confirmation is processing. Please refresh in a moment.",
+  failed: "Payment was not completed. Please return to checkout and try another payment method.",
+  cancelled: "This checkout was cancelled before payment was completed.",
+  refunded: "This order has been fully refunded.",
+  partially_refunded: "This order has been partially refunded."
+};
+
 export function OrderConfirmationClient() {
   const params = useSearchParams();
   const sessionId = params.get("session_id");
@@ -107,9 +115,9 @@ export function OrderConfirmationClient() {
                 </div>
               </div>
 
-              {order.status !== "paid" && (
+              {statusMessages[order.status] && (
                 <div className="mt-6 rounded border border-line bg-cream p-4 text-sm text-muted">
-                  Payment confirmation is processing. Please refresh in a moment.
+                  {statusMessages[order.status]}
                 </div>
               )}
 
@@ -130,7 +138,9 @@ export function OrderConfirmationClient() {
                 </div>
               </div>
 
-              <p className="mt-6 text-sm text-muted">A confirmation email will be sent to {order.customerEmail}.</p>
+              {order.status === "paid" && (
+                <p className="mt-6 text-sm text-muted">A confirmation email will be sent to {order.customerEmail}.</p>
+              )}
             </>
           )}
 
