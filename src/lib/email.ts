@@ -33,6 +33,14 @@ type OrderEmailData = {
 
 const fromEmail = "KENSYDE <support@kensyde.com>";
 
+export const escapeHtml = (value: unknown) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 const money = (value: unknown, currency = "USD") =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -44,9 +52,9 @@ const orderItemRows = (order: OrderEmailData) =>
     .map(
       (item) => `
         <tr>
-          <td>${item.productName}</td>
-          <td>${item.color}</td>
-          <td>${item.capacity}</td>
+          <td>${escapeHtml(item.productName)}</td>
+          <td>${escapeHtml(item.color)}</td>
+          <td>${escapeHtml(item.capacity)}</td>
           <td>${item.quantity}</td>
           <td>${money(item.totalPrice, order.currency)}</td>
         </tr>
@@ -91,10 +99,10 @@ export async function sendOrderNotification(order: OrderEmailData) {
     .map(
       (item) => `
         <tr>
-          <td>${item.sku}</td>
-          <td>${item.productName}</td>
-          <td>${item.color}</td>
-          <td>${item.capacity}</td>
+          <td>${escapeHtml(item.sku)}</td>
+          <td>${escapeHtml(item.productName)}</td>
+          <td>${escapeHtml(item.color)}</td>
+          <td>${escapeHtml(item.capacity)}</td>
           <td>${item.quantity}</td>
           <td>${money(item.unitPrice, order.currency)}</td>
           <td>${money(item.totalPrice, order.currency)}</td>
@@ -109,16 +117,16 @@ export async function sendOrderNotification(order: OrderEmailData) {
     replyTo: order.customerEmail,
     html: `
       <h2>New paid KENSYDE order</h2>
-      <p><strong>Order Number:</strong> ${order.orderNumber}</p>
-      <p><strong>Customer:</strong> ${order.customerName} (${order.customerEmail})</p>
-      <p><strong>Phone:</strong> ${order.phone}</p>
+      <p><strong>Order Number:</strong> ${escapeHtml(order.orderNumber)}</p>
+      <p><strong>Customer:</strong> ${escapeHtml(order.customerName)} (${escapeHtml(order.customerEmail)})</p>
+      <p><strong>Phone:</strong> ${escapeHtml(order.phone)}</p>
       <p><strong>Shipping Address:</strong><br />
-        ${order.shippingAddress}<br />
-        ${order.city}, ${order.state} ${order.postalCode}<br />
-        ${order.country}
+        ${escapeHtml(order.shippingAddress)}<br />
+        ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
+        ${escapeHtml(order.country)}
       </p>
       <p><strong>Total:</strong> ${money(order.total, order.currency)}</p>
-      <p><strong>Stripe Session ID:</strong> ${order.stripeSessionId || ""}</p>
+      <p><strong>Stripe Session ID:</strong> ${escapeHtml(order.stripeSessionId || "")}</p>
       <table border="1" cellpadding="8" cellspacing="0">
         <thead>
           <tr>
@@ -144,14 +152,14 @@ export async function sendCustomerOrderConfirmation(order: OrderEmailData) {
     replyTo: "support@kensyde.com",
     html: `
       <h2>Thank you for your KENSYDE order</h2>
-      <p>Hi ${order.customerName},</p>
+      <p>Hi ${escapeHtml(order.customerName)},</p>
       <p>Your payment has been confirmed and we are preparing your order.</p>
-      <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+      <p><strong>Order Number:</strong> ${escapeHtml(order.orderNumber)}</p>
       <p><strong>Total:</strong> ${money(order.total, order.currency)}</p>
       <p><strong>Shipping Address:</strong><br />
-        ${order.shippingAddress}<br />
-        ${order.city}, ${order.state} ${order.postalCode}<br />
-        ${order.country}
+        ${escapeHtml(order.shippingAddress)}<br />
+        ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
+        ${escapeHtml(order.country)}
       </p>
       <table border="1" cellpadding="8" cellspacing="0">
         <thead>
@@ -183,9 +191,9 @@ export async function sendCustomerRefundNotification(
     replyTo: "support@kensyde.com",
     html: `
       <h2>Your KENSYDE order has been ${refundDescription}</h2>
-      <p>Hi ${order.customerName},</p>
+      <p>Hi ${escapeHtml(order.customerName)},</p>
       <p>A refund of <strong>${money(refundedAmount, order.currency)}</strong> has been issued for order
-        <strong>${order.orderNumber}</strong>.</p>
+        <strong>${escapeHtml(order.orderNumber)}</strong>.</p>
       <p>Refund timing depends on your bank or card provider.</p>
       <p>For questions, reply to this email or contact support@kensyde.com.</p>
     `

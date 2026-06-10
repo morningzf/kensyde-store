@@ -43,6 +43,7 @@ model Order {
   paymentProvider       String      @default("stripe")
   stripeSessionId       String?     @unique
   stripePaymentIntentId String?
+  refundedAmount        Decimal     @default(0) @db.Decimal(10, 2)
   paidAt                DateTime?
   items                 OrderItem[]
   createdAt             DateTime    @default(now())

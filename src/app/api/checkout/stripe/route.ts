@@ -32,6 +32,18 @@ const requiredCustomerFields: Array<keyof CheckoutCustomer> = [
   "postal",
   "country"
 ];
+const supportedCountries = new Set(["United States", "United Kingdom", "Germany", "France"]);
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const fieldLimits: Record<keyof CheckoutCustomer, number> = {
+  email: 254,
+  name: 120,
+  phone: 40,
+  address: 240,
+  city: 100,
+  state: 100,
+  postal: 30,
+  country: 50
+};
 
 const generateOrderNumber = () => `KEN-${Date.now().toString().slice(-8)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
@@ -42,7 +54,24 @@ function validateCustomer(customer: CheckoutCustomer | undefined) {
     throw new Error(`Missing checkout fields: ${missing.join(", ")}`);
   }
 
-  return customer as Required<CheckoutCustomer>;
+  const normalized = Object.fromEntries(
+    requiredCustomerFields.map((field) => [field, customer?.[field]?.trim() || ""])
+  ) as Required<CheckoutCustomer>;
+
+  const tooLong = requiredCustomerFields.find((field) => normalized[field].length > fieldLimits[field]);
+  if (tooLong) {
+    throw new Error(`Checkout field is too long: ${tooLong}`);
+  }
+
+  if (!emailPattern.test(normalized.email)) {
+    throw new Error("Please enter a valid email address.");
+  }
+
+  if (!supportedCountries.has(normalized.country)) {
+    throw new Error("Shipping country is not supported.");
+  }
+
+  return normalized;
 }
 
 function validateItems(items: CheckoutItem[] | undefined) {

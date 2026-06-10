@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { sendEmail } from "@/lib/email";
+import { escapeHtml, sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type ContactBody = {
   name?: string;
@@ -19,6 +20,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Missing fields: ${missing.join(", ")}` }, { status: 400 });
   }
 
+  const normalized = {
+    name: body.name!.trim(),
+    email: body.email!.trim(),
+    subject: body.subject!.trim().replace(/[\r\n]+/g, " "),
+    message: body.message!.trim()
+  };
+
+  if (!emailPattern.test(normalized.email)) {
+    return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+  }
+
+  if (
+    normalized.name.length > 120 ||
+    normalized.email.length > 254 ||
+    normalized.subject.length > 160 ||
+    normalized.message.length > 5000
+  ) {
+    return NextResponse.json({ error: "One or more fields are too long." }, { status: 400 });
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey || apiKey.includes("replace_me")) {
@@ -30,15 +51,15 @@ export async function POST(request: Request) {
   try {
     await sendEmail({
       to,
-      subject: `KENSYDE contact: ${body.subject}`,
-      replyTo: body.email,
+      subject: `KENSYDE contact: ${normalized.subject}`,
+      replyTo: normalized.email,
       html: `
         <h2>New KENSYDE contact message</h2>
-        <p><strong>Name:</strong> ${body.name}</p>
-        <p><strong>Email:</strong> ${body.email}</p>
-        <p><strong>Subject:</strong> ${body.subject}</p>
+        <p><strong>Name:</strong> ${escapeHtml(normalized.name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(normalized.email)}</p>
+        <p><strong>Subject:</strong> ${escapeHtml(normalized.subject)}</p>
         <p><strong>Message:</strong></p>
-        <p>${body.message?.replace(/\n/g, "<br />")}</p>
+        <p>${escapeHtml(normalized.message).replace(/\n/g, "<br />")}</p>
       `
     });
 

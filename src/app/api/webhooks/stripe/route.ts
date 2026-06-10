@@ -144,11 +144,13 @@ export async function POST(request: Request) {
           include: { items: true }
         });
 
-        if (order && order.status !== "refunded") {
+        const refundedAmount = charge.amount_refunded / 100;
+
+        if (order && Number(order.refundedAmount) < refundedAmount) {
           const status = charge.amount_refunded >= charge.amount ? "refunded" : "partially_refunded";
           await prisma.order.update({
             where: { id: order.id },
-            data: { status }
+            data: { status, refundedAmount }
           });
 
           try {
@@ -169,7 +171,7 @@ export async function POST(request: Request) {
                 items: order.items
               },
               status,
-              charge.amount_refunded / 100
+              refundedAmount
             );
           } catch (emailError) {
             console.error("Customer refund email failed", emailError);
