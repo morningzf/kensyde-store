@@ -39,6 +39,21 @@ const money = (value: unknown, currency = "USD") =>
     currency: currency.toUpperCase()
   }).format(Number(value));
 
+const orderItemRows = (order: OrderEmailData) =>
+  order.items
+    .map(
+      (item) => `
+        <tr>
+          <td>${item.productName}</td>
+          <td>${item.color}</td>
+          <td>${item.capacity}</td>
+          <td>${item.quantity}</td>
+          <td>${money(item.totalPrice, order.currency)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
 export async function sendEmail({ to, subject, html, replyTo }: EmailPayload) {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -118,6 +133,61 @@ export async function sendOrderNotification(order: OrderEmailData) {
         </thead>
         <tbody>${itemRows}</tbody>
       </table>
+    `
+  });
+}
+
+export async function sendCustomerOrderConfirmation(order: OrderEmailData) {
+  return sendEmail({
+    to: order.customerEmail,
+    subject: `KENSYDE order confirmation ${order.orderNumber}`,
+    replyTo: "support@kensyde.com",
+    html: `
+      <h2>Thank you for your KENSYDE order</h2>
+      <p>Hi ${order.customerName},</p>
+      <p>Your payment has been confirmed and we are preparing your order.</p>
+      <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+      <p><strong>Total:</strong> ${money(order.total, order.currency)}</p>
+      <p><strong>Shipping Address:</strong><br />
+        ${order.shippingAddress}<br />
+        ${order.city}, ${order.state} ${order.postalCode}<br />
+        ${order.country}
+      </p>
+      <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Color</th>
+            <th>Capacity</th>
+            <th>Qty</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>${orderItemRows(order)}</tbody>
+      </table>
+      <p>For product or order support, reply to this email or contact support@kensyde.com.</p>
+    `
+  });
+}
+
+export async function sendCustomerRefundNotification(
+  order: OrderEmailData,
+  status: "refunded" | "partially_refunded",
+  refundedAmount: number
+) {
+  const refundDescription = status === "refunded" ? "fully refunded" : "partially refunded";
+
+  return sendEmail({
+    to: order.customerEmail,
+    subject: `KENSYDE refund update ${order.orderNumber}`,
+    replyTo: "support@kensyde.com",
+    html: `
+      <h2>Your KENSYDE order has been ${refundDescription}</h2>
+      <p>Hi ${order.customerName},</p>
+      <p>A refund of <strong>${money(refundedAmount, order.currency)}</strong> has been issued for order
+        <strong>${order.orderNumber}</strong>.</p>
+      <p>Refund timing depends on your bank or card provider.</p>
+      <p>For questions, reply to this email or contact support@kensyde.com.</p>
     `
   });
 }

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { sendOrderNotification } from "@/lib/email";
+import {
+  sendCustomerOrderConfirmation,
+  sendCustomerRefundNotification,
+  sendOrderNotification
+} from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -88,7 +92,7 @@ export async function POST(request: Request) {
       });
 
       try {
-        await sendOrderNotification({
+        const emailOrder = {
           orderNumber: paidOrder.orderNumber,
           customerName: paidOrder.customerName,
           customerEmail: paidOrder.customerEmail,
@@ -102,6 +106,17 @@ export async function POST(request: Request) {
           currency: paidOrder.currency,
           stripeSessionId: paidOrder.stripeSessionId,
           items: paidOrder.items
+        };
+
+        const emailResults = await Promise.allSettled([
+          sendOrderNotification(emailOrder),
+          sendCustomerOrderConfirmation(emailOrder)
+        ]);
+
+        emailResults.forEach((result) => {
+          if (result.status === "rejected") {
+            console.error("Paid order email failed", result.reason);
+          }
         });
       } catch (emailError) {
         console.error("Order notification email failed", emailError);
@@ -125,7 +140,8 @@ export async function POST(request: Request) {
 
       if (paymentIntentId) {
         const order = await prisma.order.findFirst({
-          where: { stripePaymentIntentId: paymentIntentId }
+          where: { stripePaymentIntentId: paymentIntentId },
+          include: { items: true }
         });
 
         if (order && order.status !== "refunded") {
@@ -134,6 +150,30 @@ export async function POST(request: Request) {
             where: { id: order.id },
             data: { status }
           });
+
+          try {
+            await sendCustomerRefundNotification(
+              {
+                orderNumber: order.orderNumber,
+                customerName: order.customerName,
+                customerEmail: order.customerEmail,
+                phone: order.phone,
+                shippingAddress: order.shippingAddress,
+                city: order.city,
+                state: order.state,
+                postalCode: order.postalCode,
+                country: order.country,
+                total: order.total,
+                currency: order.currency,
+                stripeSessionId: order.stripeSessionId,
+                items: order.items
+              },
+              status,
+              charge.amount_refunded / 100
+            );
+          } catch (emailError) {
+            console.error("Customer refund email failed", emailError);
+          }
         }
       }
     }
