@@ -31,7 +31,7 @@ type OrderEmailData = {
   items: OrderEmailItem[];
 };
 
-const fromEmail = "KENSYDE <onboarding@resend.dev>";
+const fromEmail = "KENSYDE <support@kensyde.com>";
 
 const money = (value: unknown, currency = "USD") =>
   new Intl.NumberFormat("en-US", {
