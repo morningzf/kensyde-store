@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/Button";
 import { OrderSummary } from "@/components/OrderSummary";
 import { useCart } from "@/context/CartContext";
+import { trackEvent } from "@/lib/analytics";
 
 const fields = [
   ["email", "Email", "email"],
@@ -41,6 +42,7 @@ export function CheckoutClient() {
         throw new Error("PayPal is coming soon. Please use Credit Card / Stripe for checkout.");
       }
 
+      trackEvent({ eventType: "checkout_started" });
       const response = await fetch("/api/checkout/stripe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -70,3 +70,17 @@ model OrderItem {
 
   @@index([orderId])
 }
+
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  eventType   String
+  sessionId   String
+  path        String
+  productSku  String?
+  productSlug String?
+  createdAt   DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([productSku, eventType, createdAt])
+  @@index([sessionId, createdAt])
+}

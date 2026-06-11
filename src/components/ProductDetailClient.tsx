@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { formatPrice, products, type Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
+import { trackEvent } from "@/lib/analytics";
 
 const displayFeatures = [
   "Double-Wall Insulation",
@@ -35,6 +36,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
   useEffect(() => {
     setSelectedImage(product.image);
     setSelectedColor(product.color);
+    trackEvent({ eventType: "product_view", productSku: product.sku, productSlug: product.slug });
   }, [product]);
 
   const specs = [
@@ -137,7 +139,10 @@ export function ProductDetailClient({ product }: { product: Product }) {
         <Button
           className="mt-8 w-full"
           variant="secondary"
-          onClick={() => addItem(product, quantity, { color: selectedColor, capacity: product.capacity })}
+          onClick={() => {
+            addItem(product, quantity, { color: selectedColor, capacity: product.capacity });
+            trackEvent({ eventType: "add_to_cart", productSku: product.sku, productSlug: product.slug });
+          }}
         >
           Add to Cart
         </Button>

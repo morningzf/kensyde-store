@@ -9,11 +9,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-cream">
       <header className="border-b border-line bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
+        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-3 lg:px-8">
           <Link href="/admin/orders" className="font-heading text-lg font-extrabold tracking-[0.08em] text-navy">
             KENSYDE <span className="font-medium tracking-normal text-muted">Admin</span>
           </Link>
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.12em] text-muted">Private Workspace</span>
+          <nav className="flex items-center gap-5 font-heading text-sm font-semibold text-navy">
+            <Link href="/admin/orders" className="hover:text-sand">Orders</Link>
+            <Link href="/admin/analytics" className="hover:text-sand">Analytics</Link>
+          </nav>
         </div>
       </header>
       {children}
