@@ -227,12 +227,18 @@ export default async function AdminAnalyticsPage({
         </div>
       </div>
 
-      <section className="mt-7 rounded border border-line bg-white p-5">
-        <div>
-          <h2 className="font-heading text-base font-semibold text-navy">Daily Traffic Trend</h2>
-          <p className="mt-1 text-xs text-muted">Bars show page views. The table includes daily funnel activity.</p>
-        </div>
-        <div className="mt-6 flex h-36 items-end gap-1 overflow-hidden border-b border-line">
+      <details className="group mt-7 rounded border border-line bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+          <div>
+            <h2 className="font-heading text-base font-semibold text-navy">Daily Traffic Trend</h2>
+            <p className="mt-1 text-xs text-muted">{daily.length} days · {eventCount("page_view")} page views · {visitors} visitors</p>
+          </div>
+          <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">
+            View details
+          </span>
+        </summary>
+        <div className="border-t border-line p-5">
+        <div className="flex h-36 items-end gap-1 overflow-hidden border-b border-line">
           {daily.map((day) => (
             <div key={day.label} className="group relative flex min-w-1 flex-1 items-end justify-center" title={`${day.label}: ${day.views} page views`}>
               <div className="w-full max-w-5 bg-sand transition hover:bg-navy" style={{ height: `${Math.max(3, (day.views / maxDailyViews) * 100)}%` }} />
@@ -269,15 +275,19 @@ export default async function AdminAnalyticsPage({
             </tbody>
           </table>
         </div>
-      </section>
+        </div>
+      </details>
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.5fr_0.7fr]">
-        <section className="overflow-hidden rounded border border-line bg-white">
-          <div className="border-b border-line px-5 py-4">
-            <h2 className="font-heading text-base font-semibold text-navy">Product Performance</h2>
-            <p className="mt-1 text-xs text-muted">Exposure means the product card entered the visitor&apos;s screen.</p>
-          </div>
-          <div className="overflow-x-auto">
+        <details className="group overflow-hidden rounded border border-line bg-white">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+            <div>
+              <h2 className="font-heading text-base font-semibold text-navy">Product Performance</h2>
+              <p className="mt-1 text-xs text-muted">{eventCount("product_impression")} exposures · {eventCount("product_click")} clicks · {eventCount("add_to_cart")} cart actions</p>
+            </div>
+            <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">View details</span>
+          </summary>
+          <div className="overflow-x-auto border-t border-line">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-cream text-xs uppercase tracking-[0.08em] text-muted">
                 <tr>
@@ -306,14 +316,18 @@ export default async function AdminAnalyticsPage({
               </tbody>
             </table>
           </div>
-        </section>
+        </details>
 
         <div className="space-y-6">
-          <section className="rounded border border-line bg-white">
-            <div className="border-b border-line px-5 py-4">
-              <h2 className="font-heading text-base font-semibold text-navy">Weekly Summary</h2>
-            </div>
-            <div className="divide-y divide-line">
+          <details className="group rounded border border-line bg-white">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+              <div>
+                <h2 className="font-heading text-base font-semibold text-navy">Weekly Summary</h2>
+                <p className="mt-1 text-xs text-muted">{weekly.length} weekly periods</p>
+              </div>
+              <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">View</span>
+            </summary>
+            <div className="divide-y divide-line border-t border-line">
               {weekly.map((week) => (
                 <div key={week.label} className="px-5 py-4">
                   <div className="flex items-center justify-between gap-4">
@@ -324,13 +338,17 @@ export default async function AdminAnalyticsPage({
                 </div>
               ))}
             </div>
-          </section>
+          </details>
 
-          <section className="rounded border border-line bg-white">
-            <div className="border-b border-line px-5 py-4">
-              <h2 className="font-heading text-base font-semibold text-navy">Top Pages</h2>
-            </div>
-            <div className="divide-y divide-line">
+          <details className="group rounded border border-line bg-white">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+              <div>
+                <h2 className="font-heading text-base font-semibold text-navy">Top Pages</h2>
+                <p className="mt-1 text-xs text-muted">{pageGroups.length} pages ranked by views</p>
+              </div>
+              <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">View</span>
+            </summary>
+            <div className="divide-y divide-line border-t border-line">
               {pageGroups.length === 0 ? (
                 <p className="px-5 py-10 text-center text-sm text-muted">Analytics will appear after new visits.</p>
               ) : (
@@ -342,7 +360,7 @@ export default async function AdminAnalyticsPage({
                 ))
               )}
             </div>
-          </section>
+          </details>
         </div>
       </div>
     </section>
