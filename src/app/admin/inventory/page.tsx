@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { products } from "@/data/products";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
+import { colorLabel } from "@/lib/adminLocale";
 import { ensureInventoryRecords } from "@/lib/inventory";
 import { prisma } from "@/lib/prisma";
 
@@ -26,43 +27,43 @@ export default async function AdminInventoryPage({
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
       <div className="border-b border-line pb-7">
-        <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">KENSYDE Admin</p>
-        <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">Inventory</h1>
-        <p className="mt-2 text-sm text-muted">Review stock levels and update low-stock thresholds for each SKU.</p>
+        <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">KENSYDE 管理后台</p>
+        <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">库存管理</h1>
+        <p className="mt-2 text-sm text-muted">查看各 SKU 库存，并设置低库存提醒阈值。</p>
       </div>
 
       {searchParams.updated ? (
         <p className="mt-5 rounded border border-[#B8D8C0] bg-[#F1F8F3] px-4 py-3 text-sm text-[#26643A]">
-          Inventory updated.
+          库存已更新。
         </p>
       ) : null}
 
       <div className="mt-7 grid gap-4 sm:grid-cols-3">
         <div className="rounded border border-line bg-white p-5">
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">Total Units</p>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">库存总数</p>
           <p className="mt-2 font-heading text-2xl font-bold text-navy">{totalUnits}</p>
         </div>
         <div className="rounded border border-line bg-white p-5">
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">Low Stock SKUs</p>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">低库存 SKU</p>
           <p className="mt-2 font-heading text-2xl font-bold text-[#A56B14]">{lowStock}</p>
         </div>
         <div className="rounded border border-line bg-white p-5">
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">Out of Stock</p>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">售罄 SKU</p>
           <p className="mt-2 font-heading text-2xl font-bold text-[#A63B3B]">{outOfStock}</p>
         </div>
       </div>
 
       <div className="mt-7 overflow-hidden rounded border border-line bg-white">
         <div className="border-b border-line px-5 py-4">
-          <h2 className="font-heading text-base font-semibold text-navy">Stock by SKU</h2>
-          <p className="mt-1 text-xs text-muted">Paid Stripe orders automatically reduce inventory once.</p>
+          <h2 className="font-heading text-base font-semibold text-navy">各 SKU 库存</h2>
+          <p className="mt-1 text-xs text-muted">Stripe 订单付款成功后会自动扣减一次库存。</p>
         </div>
         <div className="divide-y divide-line">
           {products.map((product) => {
             const record = inventory.get(product.sku);
             const quantity = record?.quantity || 0;
             const threshold = record?.lowStockThreshold || 10;
-            const status = quantity <= 0 ? "Out of stock" : quantity <= threshold ? "Low stock" : "In stock";
+            const status = quantity <= 0 ? "已售罄" : quantity <= threshold ? "低库存" : "库存充足";
             const statusClass =
               quantity <= 0
                 ? "border-[#F2B8B8] bg-[#FFF2F2] text-[#A63B3B]"
@@ -82,12 +83,12 @@ export default async function AdminInventoryPage({
                       {status}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-charcoal">{product.colorName} · {product.capacity}</p>
+                  <p className="mt-1 text-sm text-charcoal">{colorLabel(product.colorName)} · {product.capacity}</p>
                   <p className="mt-1 text-xs text-muted">SKU: {product.sku}</p>
                 </div>
                 <form action={`/api/admin/inventory/${encodeURIComponent(product.sku)}`} method="post" className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                   <label className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-                    Quantity
+                    当前库存
                     <input
                       name="quantity"
                       type="number"
@@ -98,7 +99,7 @@ export default async function AdminInventoryPage({
                     />
                   </label>
                   <label className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-                    Low-stock alert
+                    低库存提醒值
                     <input
                       name="lowStockThreshold"
                       type="number"
@@ -109,7 +110,7 @@ export default async function AdminInventoryPage({
                     />
                   </label>
                   <button className="min-h-10 self-end rounded bg-sand px-4 font-heading text-sm font-semibold text-navy hover:bg-[#C7A975]">
-                    Save
+                    保存
                   </button>
                 </form>
               </div>

@@ -47,14 +47,14 @@ export function AdminFulfillmentForm({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Unable to update order.");
+        throw new Error(data.error || "无法更新订单。");
       }
 
-      setMessage(data.message || "Order operations updated.");
+      setMessage(data.message || "订单操作信息已更新。");
       setWarning(data.warning || "");
       router.refresh();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to update order.");
+      setError(submitError instanceof Error ? submitError.message : "无法更新订单。");
     } finally {
       setSaving(false);
     }
@@ -64,36 +64,36 @@ export function AdminFulfillmentForm({
     <form onSubmit={submit} className="rounded border border-line bg-white p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-heading text-base font-semibold text-navy">Fulfillment & Notes</h2>
-          <p className="mt-1 text-xs leading-5 text-muted">Internal operations only. Payment status remains controlled by Stripe.</p>
+          <h2 className="font-heading text-base font-semibold text-navy">履约与内部备注</h2>
+          <p className="mt-1 text-xs leading-5 text-muted">仅供内部运营使用，付款状态仍由 Stripe 控制。</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label>
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">Fulfillment Status</span>
+          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">履约状态</span>
           <select value={status} onChange={(event) => setStatus(event.target.value)} className={fieldClass}>
-            <option value="unfulfilled">Unfulfilled</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
+            <option value="unfulfilled">待处理</option>
+            <option value="processing">处理中</option>
+            <option value="shipped">已发货</option>
+            <option value="delivered">已送达</option>
           </select>
         </label>
         <label>
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">Carrier</span>
-          <input value={carrier} onChange={(event) => setCarrier(event.target.value)} placeholder="UPS, USPS, DHL..." className={fieldClass} />
+          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">物流公司</span>
+          <input value={carrier} onChange={(event) => setCarrier(event.target.value)} placeholder="例如 UPS、USPS、DHL" className={fieldClass} />
         </label>
         <label className="sm:col-span-2">
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">Tracking Number</span>
+          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">物流单号</span>
           <input value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} className={fieldClass} />
         </label>
         <label className="sm:col-span-2">
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">Internal Note</span>
+          <span className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">内部备注</span>
           <textarea
             value={adminNote}
             onChange={(event) => setAdminNote(event.target.value)}
             rows={5}
-            placeholder="Packing notes, customer request, follow-up..."
+            placeholder="填写打包说明、客户要求或跟进事项"
             className={`${fieldClass} py-3`}
           />
         </label>
@@ -105,7 +105,7 @@ export function AdminFulfillmentForm({
         className="mt-5 inline-flex min-h-11 items-center gap-2 rounded bg-sand px-5 font-heading text-sm font-semibold text-navy hover:bg-[#C7A975] disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Save size={16} aria-hidden="true" />
-        {saving ? "Saving..." : "Save Operations"}
+        {saving ? "正在保存..." : "保存操作信息"}
       </button>
       {message && <p className="mt-3 text-sm text-emerald-700">{message}</p>}
       {warning && <p className="mt-2 text-sm text-amber-700">{warning}</p>}

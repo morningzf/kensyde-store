@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
+import { fulfillmentStatusLabel, paymentStatusLabel } from "@/lib/adminLocale";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -19,7 +20,7 @@ function csvCell(value: string | number | null | undefined) {
 
 export async function GET(request: Request) {
   if (!isAdminAuthenticated()) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: "未登录或登录已过期。" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -46,38 +47,38 @@ export async function GET(request: Request) {
   });
 
   const headers = [
-    "Order Number",
-    "Status",
-    "Created At",
-    "Paid At",
-    "Customer Name",
-    "Customer Email",
-    "Phone",
-    "Shipping Address",
-    "City",
-    "State",
-    "Postal Code",
-    "Country",
-    "Items",
-    "Subtotal",
-    "Shipping",
-    "Total",
-    "Refunded Amount",
-    "Currency",
-    "Payment Provider",
+    "订单号",
+    "付款状态",
+    "创建时间",
+    "付款时间",
+    "客户姓名",
+    "客户邮箱",
+    "电话",
+    "收货地址",
+    "城市",
+    "州/省",
+    "邮编",
+    "国家",
+    "商品明细",
+    "商品小计",
+    "运费",
+    "订单总额",
+    "退款金额",
+    "币种",
+    "支付渠道",
     "Stripe Session ID",
     "Stripe Payment Intent ID"
-    ,"Fulfillment Status"
-    ,"Carrier"
-    ,"Tracking Number"
-    ,"Internal Note"
-    ,"Fulfilled At"
-    ,"Shipping Email Sent At"
+    ,"履约状态"
+    ,"物流公司"
+    ,"物流单号"
+    ,"内部备注"
+    ,"履约时间"
+    ,"发货邮件发送时间"
   ];
 
   const rows = orders.map((order) => [
     order.orderNumber,
-    order.status,
+    paymentStatusLabel(order.status),
     order.createdAt.toISOString(),
     order.paidAt?.toISOString() || "",
     order.customerName,
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
     order.postalCode,
     order.country,
     order.items
-      .map((item) => `${item.sku} | ${item.color} | ${item.capacity} | Qty ${item.quantity}`)
+      .map((item) => `${item.sku} | ${item.color} | ${item.capacity} | 数量 ${item.quantity}`)
       .join("; "),
     Number(order.subtotal).toFixed(2),
     Number(order.shipping).toFixed(2),
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
     order.paymentProvider,
     order.stripeSessionId || "",
     order.stripePaymentIntentId || "",
-    order.fulfillmentStatus,
+    fulfillmentStatusLabel(order.fulfillmentStatus),
     order.carrier || "",
     order.trackingNumber || "",
     order.adminNote || "",

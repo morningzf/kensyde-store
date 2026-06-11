@@ -31,21 +31,21 @@ function getAttemptRecord(clientKey: string) {
 
 export async function POST(request: Request) {
   if (!isAdminConfigured()) {
-    return NextResponse.json({ error: "Admin access is not configured." }, { status: 503 });
+    return NextResponse.json({ error: "管理员访问尚未配置。" }, { status: 503 });
   }
 
   const clientKey = getClientKey(request);
   const attemptRecord = getAttemptRecord(clientKey);
 
   if (attemptRecord.count >= maximumAttempts) {
-    return NextResponse.json({ error: "Too many sign-in attempts. Please try again later." }, { status: 429 });
+    return NextResponse.json({ error: "登录尝试次数过多，请稍后再试。" }, { status: 429 });
   }
 
   const body = (await request.json().catch(() => null)) as { password?: string } | null;
 
   if (!body?.password || !verifyAdminPassword(body.password)) {
     attemptRecord.count += 1;
-    return NextResponse.json({ error: "Invalid admin password." }, { status: 401 });
+    return NextResponse.json({ error: "管理员密码错误。" }, { status: 401 });
   }
 
   attempts.delete(clientKey);

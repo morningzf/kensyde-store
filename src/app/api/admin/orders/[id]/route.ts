@@ -24,7 +24,7 @@ function clean(value: string | undefined, maxLength: number) {
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   if (!isAdminAuthenticated()) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: "未登录或登录已过期。" }, { status: 401 });
   }
 
   try {
@@ -32,7 +32,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const fulfillmentStatus = body.fulfillmentStatus?.trim() || "";
 
     if (!fulfillmentStatuses.has(fulfillmentStatus)) {
-      return NextResponse.json({ error: "Invalid fulfillment status." }, { status: 400 });
+      return NextResponse.json({ error: "履约状态无效。" }, { status: 400 });
     }
 
     const existing = await prisma.order.findUnique({
@@ -40,11 +40,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       include: { items: true }
     });
     if (!existing) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      return NextResponse.json({ error: "未找到该订单。" }, { status: 404 });
     }
 
     if ((fulfillmentStatus === "shipped" || fulfillmentStatus === "delivered") && existing.status !== "paid") {
-      return NextResponse.json({ error: "Only paid orders can be marked as shipped or delivered." }, { status: 400 });
+      return NextResponse.json({ error: "只有已付款订单才能标记为已发货或已送达。" }, { status: 400 });
     }
 
     const carrier = clean(body.carrier, 100);
@@ -52,7 +52,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     if (fulfillmentStatus === "shipped" && (!carrier || !trackingNumber)) {
       return NextResponse.json(
-        { error: "Carrier and tracking number are required before marking an order as shipped." },
+        { error: "标记为已发货前，必须填写物流公司和物流单号。" },
         { status: 400 }
       );
     }
@@ -73,7 +73,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       }
     });
 
-    let message = "Order operations updated.";
+    let message = "订单操作信息已更新。";
     let warning = "";
 
     if (fulfillmentStatus === "shipped" && !existing.shippingNotifiedAt && carrier && trackingNumber) {
@@ -99,17 +99,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         );
 
         if ("skipped" in emailResult && emailResult.skipped) {
-          warning = "Order saved, but shipping email was not sent because email service is not configured.";
+          warning = "订单已保存，但邮件服务尚未配置，未发送发货通知。";
         } else {
           await prisma.order.update({
             where: { id: existing.id },
             data: { shippingNotifiedAt: new Date() }
           });
-          message = "Order updated and shipping email sent.";
+          message = "订单已更新，发货通知邮件已发送。";
         }
       } catch (emailError) {
         console.error("Shipping notification email failed", emailError);
-        warning = "Order saved, but shipping email could not be sent. Save again to retry.";
+        warning = "订单已保存，但发货通知邮件发送失败。可再次保存重试。";
       }
     }
 
@@ -123,7 +123,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   } catch (error) {
     console.error("Admin order update failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to update order." },
+      { error: error instanceof Error ? error.message : "无法更新订单。" },
       { status: 400 }
     );
   }

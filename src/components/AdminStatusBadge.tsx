@@ -14,7 +14,7 @@ export function AdminStatusBadge({ status }: { status: string }) {
         statusStyles[status] || "border-line bg-cream text-muted"
       }`}
     >
-      {status.replaceAll("_", " ")}
+      {paymentStatusLabel(status)}
     </span>
   );
 }
@@ -33,7 +33,8 @@ export function AdminFulfillmentBadge({ status }: { status: string }) {
         fulfillmentStyles[status] || fulfillmentStyles.unfulfilled
       }`}
     >
-      {status.replaceAll("_", " ")}
+      {fulfillmentStatusLabel(status)}
     </span>
   );
 }
+import { fulfillmentStatusLabel, paymentStatusLabel } from "@/lib/adminLocale";

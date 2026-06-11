@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatPrice, products } from "@/data/products";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
+import { colorLabel } from "@/lib/adminLocale";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -27,10 +28,10 @@ type TrendPoint = {
 };
 
 const ranges = [
-  { value: "today", label: "Today", days: 1 },
-  { value: "7d", label: "7 Days", days: 7 },
-  { value: "30d", label: "30 Days", days: 30 },
-  { value: "90d", label: "90 Days", days: 90 }
+  { value: "today", label: "今日", days: 1 },
+  { value: "7d", label: "近 7 天", days: 7 },
+  { value: "30d", label: "近 30 天", days: 30 },
+  { value: "90d", label: "近 90 天", days: 90 }
 ] as const;
 
 function percent(numerator: number, denominator: number) {
@@ -168,21 +169,21 @@ export default async function AdminAnalyticsPage({
   const maxDailyViews = Math.max(1, ...daily.map((day) => day.views));
 
   const cards = [
-    { label: "Visitors", value: visitors, previous: previousVisitors, note: "Anonymous browser sessions" },
-    { label: "Page Views", value: eventCount("page_view"), previous: eventCount("page_view", previousEvents), note: "Pages opened" },
-    { label: "Product Views", value: eventCount("product_view"), previous: eventCount("product_view", previousEvents), note: "Product detail visits" },
-    { label: "Add to Cart", value: eventCount("add_to_cart"), previous: eventCount("add_to_cart", previousEvents), note: "Cart actions" },
-    { label: "Checkout Starts", value: checkoutStarts, previous: eventCount("checkout_started", previousEvents), note: "Stripe checkout attempts" },
-    { label: "Paid Orders", value: orders.length, previous: previousOrders.length, note: `${percent(orders.length, checkoutStarts)} of checkout starts` }
+    { label: "访客数", value: visitors, previous: previousVisitors, note: "匿名浏览器访问会话" },
+    { label: "页面浏览量", value: eventCount("page_view"), previous: eventCount("page_view", previousEvents), note: "页面打开次数" },
+    { label: "商品详情浏览量", value: eventCount("product_view"), previous: eventCount("product_view", previousEvents), note: "商品详情页访问次数" },
+    { label: "加入购物车", value: eventCount("add_to_cart"), previous: eventCount("add_to_cart", previousEvents), note: "加入购物车操作次数" },
+    { label: "开始结账", value: checkoutStarts, previous: eventCount("checkout_started", previousEvents), note: "进入 Stripe 结账的次数" },
+    { label: "已付款订单", value: orders.length, previous: previousOrders.length, note: `结账转化率 ${percent(orders.length, checkoutStarts)}` }
   ];
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
       <div className="flex flex-col justify-between gap-5 border-b border-line pb-7 md:flex-row md:items-end">
         <div>
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">KENSYDE Admin</p>
-          <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">Analytics</h1>
-          <p className="mt-2 text-sm text-muted">First-party storefront performance with comparison to the previous period.</p>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">KENSYDE 管理后台</p>
+          <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">数据分析</h1>
+          <p className="mt-2 text-sm text-muted">查看网站访问、商品表现和销售转化，并与上一周期对比。</p>
         </div>
         <div className="flex flex-wrap rounded border border-line bg-white p-1">
           {ranges.map((range) => (
@@ -217,9 +218,9 @@ export default async function AdminAnalyticsPage({
       <div className="mt-6 rounded border border-line bg-navy p-6 text-white">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-sand">Paid Revenue</p>
+            <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-sand">已付款销售额</p>
             <p className="mt-2 font-heading text-3xl font-bold">{formatPrice(paidRevenue)}</p>
-            <p className="mt-2 text-sm text-white/65">Paid, non-refunded orders during the selected period.</p>
+            <p className="mt-2 text-sm text-white/65">所选时间范围内已付款且未全额退款的订单金额。</p>
           </div>
           <span className={`text-sm font-semibold ${paidRevenue >= previousRevenue ? "text-emerald-300" : "text-red-300"}`}>
             {changePercent(paidRevenue, previousRevenue)}
@@ -230,11 +231,11 @@ export default async function AdminAnalyticsPage({
       <details className="group mt-7 rounded border border-line bg-white">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
           <div>
-            <h2 className="font-heading text-base font-semibold text-navy">Daily Traffic Trend</h2>
-            <p className="mt-1 text-xs text-muted">{daily.length} days · {eventCount("page_view")} page views · {visitors} visitors</p>
+            <h2 className="font-heading text-base font-semibold text-navy">每日流量趋势</h2>
+            <p className="mt-1 text-xs text-muted">{daily.length} 天 · {eventCount("page_view")} 次浏览 · {visitors} 位访客</p>
           </div>
           <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">
-            View details
+            查看详情
           </span>
         </summary>
         <div className="border-t border-line p-5">
@@ -249,14 +250,14 @@ export default async function AdminAnalyticsPage({
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="bg-cream text-xs uppercase tracking-[0.08em] text-muted">
               <tr>
-                <th className="px-4 py-3 font-heading font-semibold">Date</th>
-                <th className="px-4 py-3 font-heading font-semibold">Visitors</th>
-                <th className="px-4 py-3 font-heading font-semibold">Page Views</th>
-                <th className="px-4 py-3 font-heading font-semibold">Product Views</th>
-                <th className="px-4 py-3 font-heading font-semibold">Add to Cart</th>
-                <th className="px-4 py-3 font-heading font-semibold">Checkout</th>
-                <th className="px-4 py-3 font-heading font-semibold">Orders</th>
-                <th className="px-4 py-3 font-heading font-semibold">Revenue</th>
+                <th className="px-4 py-3 font-heading font-semibold">日期</th>
+                <th className="px-4 py-3 font-heading font-semibold">访客</th>
+                <th className="px-4 py-3 font-heading font-semibold">页面浏览</th>
+                <th className="px-4 py-3 font-heading font-semibold">商品浏览</th>
+                <th className="px-4 py-3 font-heading font-semibold">加入购物车</th>
+                <th className="px-4 py-3 font-heading font-semibold">开始结账</th>
+                <th className="px-4 py-3 font-heading font-semibold">付款订单</th>
+                <th className="px-4 py-3 font-heading font-semibold">销售额</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -282,28 +283,28 @@ export default async function AdminAnalyticsPage({
         <details className="group overflow-hidden rounded border border-line bg-white">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <div>
-              <h2 className="font-heading text-base font-semibold text-navy">Product Performance</h2>
-              <p className="mt-1 text-xs text-muted">{eventCount("product_impression")} exposures · {eventCount("product_click")} clicks · {eventCount("add_to_cart")} cart actions</p>
+              <h2 className="font-heading text-base font-semibold text-navy">商品表现</h2>
+              <p className="mt-1 text-xs text-muted">{eventCount("product_impression")} 次曝光 · {eventCount("product_click")} 次点击 · {eventCount("add_to_cart")} 次加购</p>
             </div>
-            <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">View details</span>
+            <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">查看详情</span>
           </summary>
           <div className="overflow-x-auto border-t border-line">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-cream text-xs uppercase tracking-[0.08em] text-muted">
                 <tr>
-                  <th className="px-5 py-3 font-heading font-semibold">Color</th>
-                  <th className="px-5 py-3 font-heading font-semibold">Exposure</th>
-                  <th className="px-5 py-3 font-heading font-semibold">Clicks</th>
-                  <th className="px-5 py-3 font-heading font-semibold">Click Rate</th>
-                  <th className="px-5 py-3 font-heading font-semibold">Detail Views</th>
-                  <th className="px-5 py-3 font-heading font-semibold">Add to Cart</th>
+                  <th className="px-5 py-3 font-heading font-semibold">颜色</th>
+                  <th className="px-5 py-3 font-heading font-semibold">曝光</th>
+                  <th className="px-5 py-3 font-heading font-semibold">点击</th>
+                  <th className="px-5 py-3 font-heading font-semibold">点击率</th>
+                  <th className="px-5 py-3 font-heading font-semibold">详情浏览</th>
+                  <th className="px-5 py-3 font-heading font-semibold">加入购物车</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {metrics.map((metric) => (
                   <tr key={metric.sku}>
                     <td className="px-5 py-4">
-                      <p className="font-heading font-semibold text-navy">{metric.color}</p>
+                      <p className="font-heading font-semibold text-navy">{colorLabel(metric.color)}</p>
                       <p className="mt-1 text-xs text-muted">{metric.sku}</p>
                     </td>
                     <td className="px-5 py-4 text-muted">{metric.impressions}</td>
@@ -322,19 +323,19 @@ export default async function AdminAnalyticsPage({
           <details className="group rounded border border-line bg-white">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
               <div>
-                <h2 className="font-heading text-base font-semibold text-navy">Weekly Summary</h2>
-                <p className="mt-1 text-xs text-muted">{weekly.length} weekly periods</p>
+                <h2 className="font-heading text-base font-semibold text-navy">每周汇总</h2>
+                <p className="mt-1 text-xs text-muted">共 {weekly.length} 个周周期</p>
               </div>
-              <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">View</span>
+              <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">查看</span>
             </summary>
             <div className="divide-y divide-line border-t border-line">
               {weekly.map((week) => (
                 <div key={week.label} className="px-5 py-4">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="font-heading text-sm font-semibold text-navy">Week of {week.label}</span>
+                    <span className="font-heading text-sm font-semibold text-navy">{week.label} 当周</span>
                     <span className="font-heading text-sm font-semibold text-navy">{formatPrice(week.revenue)}</span>
                   </div>
-                  <p className="mt-2 text-xs text-muted">{week.visitors.size} visitors · {week.views} views · {week.orders} orders</p>
+                  <p className="mt-2 text-xs text-muted">{week.visitors.size} 位访客 · {week.views} 次浏览 · {week.orders} 笔订单</p>
                 </div>
               ))}
             </div>
@@ -343,14 +344,14 @@ export default async function AdminAnalyticsPage({
           <details className="group rounded border border-line bg-white">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
               <div>
-                <h2 className="font-heading text-base font-semibold text-navy">Top Pages</h2>
-                <p className="mt-1 text-xs text-muted">{pageGroups.length} pages ranked by views</p>
+                <h2 className="font-heading text-base font-semibold text-navy">热门页面</h2>
+                <p className="mt-1 text-xs text-muted">按浏览量展示前 {pageGroups.length} 个页面</p>
               </div>
-              <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">View</span>
+              <span className="font-heading text-xs font-semibold uppercase tracking-[0.1em] text-muted group-open:text-navy">查看</span>
             </summary>
             <div className="divide-y divide-line border-t border-line">
               {pageGroups.length === 0 ? (
-                <p className="px-5 py-10 text-center text-sm text-muted">Analytics will appear after new visits.</p>
+                <p className="px-5 py-10 text-center text-sm text-muted">产生新的访问后，这里会显示分析数据。</p>
               ) : (
                 pageGroups.map((page) => (
                   <div key={page.path} className="flex items-center justify-between gap-4 px-5 py-4 text-sm">

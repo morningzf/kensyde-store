@@ -4,7 +4,7 @@ import { AdminLoginClient } from "@/components/AdminLoginClient";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const metadata: Metadata = {
-  title: "Order Admin",
+  title: "KENSYDE 管理后台",
   robots: { index: false, follow: false }
 };
 

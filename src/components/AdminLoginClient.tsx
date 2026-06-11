@@ -25,13 +25,13 @@ export function AdminLoginClient() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Unable to sign in.");
+        throw new Error(data.error || "无法登录，请重试。");
       }
 
       router.replace("/admin/orders");
       router.refresh();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to sign in.");
+      setError(submitError instanceof Error ? submitError.message : "无法登录，请重试。");
     } finally {
       setSubmitting(false);
     }
@@ -43,12 +43,12 @@ export function AdminLoginClient() {
         <div className="flex h-11 w-11 items-center justify-center rounded bg-cream text-navy">
           <LockKeyhole size={20} aria-hidden="true" />
         </div>
-        <p className="mt-6 font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">Private Access</p>
-        <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">Order Admin</h1>
-        <p className="mt-3 text-sm leading-6 text-muted">Sign in to review KENSYDE orders and payment status.</p>
+        <p className="mt-6 font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">仅限管理员访问</p>
+        <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">KENSYDE 管理后台</h1>
+        <p className="mt-3 text-sm leading-6 text-muted">登录后可查看订单、付款状态、物流、数据分析和库存。</p>
 
         <label className="mt-7 block">
-          <span className="font-heading text-sm font-semibold text-charcoal">Admin password</span>
+          <span className="font-heading text-sm font-semibold text-charcoal">管理员密码</span>
           <input
             type="password"
             required
@@ -60,7 +60,7 @@ export function AdminLoginClient() {
         </label>
 
         <Button type="submit" variant="secondary" className="mt-5 w-full" disabled={submitting}>
-          {submitting ? "Signing In..." : "Sign In"}
+          {submitting ? "正在登录..." : "登录"}
         </Button>
         {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
       </form>

@@ -6,6 +6,7 @@ import { AdminFulfillmentBadge, AdminStatusBadge } from "@/components/AdminStatu
 import { AdminFulfillmentForm } from "@/components/AdminFulfillmentForm";
 import { formatPrice } from "@/data/products";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
+import { colorLabel, formatAdminDate, fulfillmentStatusLabel } from "@/lib/adminLocale";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1 border-b border-line py-3 last:border-0 sm:grid-cols-[160px_1fr]">
       <dt className="font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted">{label}</dt>
-      <dd className="break-words text-sm text-charcoal">{value || "Not provided"}</dd>
+      <dd className="break-words text-sm text-charcoal">{value || "未提供"}</dd>
     </div>
   );
 }
@@ -41,15 +42,15 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
     <section className="mx-auto max-w-6xl px-5 py-10 lg:px-8">
       <Link href="/admin/orders" className="inline-flex items-center gap-2 font-heading text-sm font-semibold text-navy hover:text-sand">
         <ArrowLeft size={17} aria-hidden="true" />
-        Back to Orders
+        返回订单列表
       </Link>
 
       <div className="mt-6 flex flex-col justify-between gap-4 border-b border-line pb-6 md:flex-row md:items-end">
         <div>
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">Order Detail</p>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">订单详情</p>
           <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">{order.orderNumber}</h1>
           <p className="mt-2 text-sm text-muted">
-            Created {new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "short" }).format(order.createdAt)}
+            创建时间：{formatAdminDate(order.createdAt)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -61,7 +62,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.35fr_0.8fr]">
         <div className="space-y-6">
           <section className="rounded border border-line bg-white">
-            <h2 className="border-b border-line px-5 py-4 font-heading text-base font-semibold text-navy">Items</h2>
+            <h2 className="border-b border-line px-5 py-4 font-heading text-base font-semibold text-navy">商品明细</h2>
             <div className="divide-y divide-line">
               {order.items.map((item) => (
                 <div key={item.id} className="grid gap-4 p-5 sm:grid-cols-[72px_1fr_auto] sm:items-center">
@@ -70,7 +71,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   </div>
                   <div>
                     <p className="font-heading font-semibold text-charcoal">{item.productName}</p>
-                    <p className="mt-1 text-sm text-muted">{item.color} / {item.capacity} / Qty {item.quantity}</p>
+                    <p className="mt-1 text-sm text-muted">{colorLabel(item.color)} / {item.capacity} / 数量 {item.quantity}</p>
                     <p className="mt-1 text-xs text-muted">SKU: {item.sku}</p>
                   </div>
                   <p className="font-heading font-semibold text-navy">{formatPrice(Number(item.totalPrice))}</p>
@@ -80,12 +81,12 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
           </section>
 
           <section className="rounded border border-line bg-white p-5">
-            <h2 className="font-heading text-base font-semibold text-navy">Customer & Shipping</h2>
+            <h2 className="font-heading text-base font-semibold text-navy">客户与收货信息</h2>
             <dl className="mt-3">
-              <DetailRow label="Customer" value={order.customerName} />
-              <DetailRow label="Email" value={order.customerEmail} />
-              <DetailRow label="Phone" value={order.phone} />
-              <DetailRow label="Ship To" value={shippingAddress} />
+              <DetailRow label="客户姓名" value={order.customerName} />
+              <DetailRow label="邮箱" value={order.customerEmail} />
+              <DetailRow label="电话" value={order.phone} />
+              <DetailRow label="收货地址" value={shippingAddress} />
             </dl>
           </section>
         </div>
@@ -100,27 +101,27 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
           />
 
           <section className="rounded border border-line bg-white p-5">
-            <h2 className="font-heading text-base font-semibold text-navy">Payment Summary</h2>
+            <h2 className="font-heading text-base font-semibold text-navy">付款汇总</h2>
             <dl className="mt-3">
-              <DetailRow label="Subtotal" value={formatPrice(Number(order.subtotal))} />
-              <DetailRow label="Shipping" value={formatPrice(Number(order.shipping))} />
-              <DetailRow label="Total" value={formatPrice(Number(order.total))} />
-              <DetailRow label="Refunded" value={formatPrice(Number(order.refundedAmount))} />
-              <DetailRow label="Currency" value={order.currency.toUpperCase()} />
-              <DetailRow label="Provider" value={order.paymentProvider} />
-              <DetailRow label="Fulfillment" value={order.fulfillmentStatus.replaceAll("_", " ")} />
-              <DetailRow label="Fulfilled At" value={order.fulfilledAt ? order.fulfilledAt.toISOString() : ""} />
-              <DetailRow label="Shipping Email" value={order.shippingNotifiedAt ? order.shippingNotifiedAt.toISOString() : "Not sent"} />
+              <DetailRow label="商品小计" value={formatPrice(Number(order.subtotal))} />
+              <DetailRow label="运费" value={formatPrice(Number(order.shipping))} />
+              <DetailRow label="订单总额" value={formatPrice(Number(order.total))} />
+              <DetailRow label="已退款金额" value={formatPrice(Number(order.refundedAmount))} />
+              <DetailRow label="币种" value={order.currency.toUpperCase()} />
+              <DetailRow label="支付渠道" value={order.paymentProvider} />
+              <DetailRow label="履约状态" value={fulfillmentStatusLabel(order.fulfillmentStatus)} />
+              <DetailRow label="履约时间" value={formatAdminDate(order.fulfilledAt)} />
+              <DetailRow label="发货邮件" value={order.shippingNotifiedAt ? `已发送，${formatAdminDate(order.shippingNotifiedAt)}` : "未发送"} />
             </dl>
           </section>
 
           <section className="rounded border border-line bg-white p-5">
-            <h2 className="font-heading text-base font-semibold text-navy">Stripe References</h2>
+            <h2 className="font-heading text-base font-semibold text-navy">Stripe 付款参考信息</h2>
             <dl className="mt-3">
               <DetailRow label="Session ID" value={order.stripeSessionId || ""} />
-              <DetailRow label="Payment Intent" value={order.stripePaymentIntentId || ""} />
-              <DetailRow label="Paid At" value={order.paidAt ? order.paidAt.toISOString() : ""} />
-              <DetailRow label="Updated At" value={order.updatedAt.toISOString()} />
+              <DetailRow label="付款意图 ID" value={order.stripePaymentIntentId || ""} />
+              <DetailRow label="付款时间" value={formatAdminDate(order.paidAt)} />
+              <DetailRow label="更新时间" value={formatAdminDate(order.updatedAt)} />
             </dl>
           </section>
         </div>
