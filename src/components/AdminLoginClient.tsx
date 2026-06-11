@@ -28,7 +28,7 @@ export function AdminLoginClient() {
         throw new Error(data.error || "无法登录，请重试。");
       }
 
-      router.replace("/admin/orders");
+      router.replace("/admin");
       router.refresh();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "无法登录，请重试。");
