@@ -26,6 +26,8 @@ export function Footer() {
           <div className="mt-4 flex flex-col gap-3 text-sm text-white/75">
             <Link href="/about">About</Link>
             <Link href="/contact">Contact</Link>
+            <Link href="/shipping-policy">Shipping Policy</Link>
+            <Link href="/return-policy">Return Policy</Link>
             <Link href="/privacy-policy">Privacy Policy</Link>
             <Link href="/terms-of-service">Terms of Service</Link>
           </div>
@@ -39,7 +41,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10 px-5 py-5 text-center text-xs text-white/55">
-        © {new Date().getFullYear()} KENSYDE. All rights reserved.
+        &copy; {new Date().getFullYear()} KENSYDE. All rights reserved.
       </div>
     </footer>
   );
