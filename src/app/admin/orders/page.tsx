@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { ArrowRight, LogOut, Search } from "lucide-react";
+import { ArrowRight, Download, LogOut, Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminStatusBadge } from "@/components/AdminStatusBadge";
@@ -27,6 +27,10 @@ export default async function AdminOrdersPage({
   const statusParam = getString(searchParams.status);
   const status = statuses.includes(statusParam as (typeof statuses)[number]) ? statusParam : "all";
   const query = getString(searchParams.q).slice(0, 120);
+  const exportParams = new URLSearchParams();
+  if (status !== "all") exportParams.set("status", status);
+  if (query) exportParams.set("q", query);
+  const exportHref = `/api/admin/orders/export${exportParams.size ? `?${exportParams.toString()}` : ""}`;
   const where: Prisma.OrderWhereInput = {
     ...(status !== "all" ? { status } : {}),
     ...(query
@@ -63,12 +67,21 @@ export default async function AdminOrdersPage({
           <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">Orders</h1>
           <p className="mt-2 text-sm text-muted">Review customer, shipping, and Stripe payment details.</p>
         </div>
-        <form action="/api/admin/logout" method="post">
-          <button className="inline-flex min-h-10 items-center gap-2 rounded border border-line bg-white px-4 font-heading text-sm font-semibold text-navy hover:border-sand">
-            <LogOut size={16} aria-hidden="true" />
-            Sign Out
-          </button>
-        </form>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={exportHref}
+            className="inline-flex min-h-10 items-center gap-2 rounded bg-sand px-4 font-heading text-sm font-semibold text-navy hover:bg-[#C7A975]"
+          >
+            <Download size={16} aria-hidden="true" />
+            Export CSV
+          </a>
+          <form action="/api/admin/logout" method="post">
+            <button className="inline-flex min-h-10 items-center gap-2 rounded border border-line bg-white px-4 font-heading text-sm font-semibold text-navy hover:border-sand">
+              <LogOut size={16} aria-hidden="true" />
+              Sign Out
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-3">
