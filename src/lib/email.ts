@@ -199,3 +199,53 @@ export async function sendCustomerRefundNotification(
     `
   });
 }
+
+export async function sendCustomerShippingNotification(
+  order: OrderEmailData,
+  carrier: string,
+  trackingNumber: string
+) {
+  return sendEmail({
+    to: order.customerEmail,
+    subject: `Your KENSYDE order has shipped ${order.orderNumber}`,
+    replyTo: "support@kensyde.com",
+    html: `
+      <h2>Your KENSYDE order is on the way</h2>
+      <p>Hi ${escapeHtml(order.customerName)},</p>
+      <p>Your order has shipped. Use the details below to follow its delivery progress.</p>
+      <p><strong>Order Number:</strong> ${escapeHtml(order.orderNumber)}</p>
+      <p><strong>Carrier:</strong> ${escapeHtml(carrier)}</p>
+      <p><strong>Tracking Number:</strong> ${escapeHtml(trackingNumber)}</p>
+      <p><strong>Shipping Address:</strong><br />
+        ${escapeHtml(order.shippingAddress)}<br />
+        ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
+        ${escapeHtml(order.country)}
+      </p>
+      <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Color</th>
+            <th>Capacity</th>
+            <th>Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.items
+            .map(
+              (item) => `
+                <tr>
+                  <td>${escapeHtml(item.productName)}</td>
+                  <td>${escapeHtml(item.color)}</td>
+                  <td>${escapeHtml(item.capacity)}</td>
+                  <td>${item.quantity}</td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <p>For delivery or order support, reply to this email or contact support@kensyde.com.</p>
+    `
+  });
+}

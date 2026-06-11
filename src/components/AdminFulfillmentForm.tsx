@@ -27,6 +27,7 @@ export function AdminFulfillmentForm({
   const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber);
   const [adminNote, setAdminNote] = useState(initialNote);
   const [message, setMessage] = useState("");
+  const [warning, setWarning] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -34,6 +35,7 @@ export function AdminFulfillmentForm({
     event.preventDefault();
     setSaving(true);
     setMessage("");
+    setWarning("");
     setError("");
 
     try {
@@ -48,7 +50,8 @@ export function AdminFulfillmentForm({
         throw new Error(data.error || "Unable to update order.");
       }
 
-      setMessage("Order operations updated.");
+      setMessage(data.message || "Order operations updated.");
+      setWarning(data.warning || "");
       router.refresh();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to update order.");
@@ -105,6 +108,7 @@ export function AdminFulfillmentForm({
         {saving ? "Saving..." : "Save Operations"}
       </button>
       {message && <p className="mt-3 text-sm text-emerald-700">{message}</p>}
+      {warning && <p className="mt-2 text-sm text-amber-700">{warning}</p>}
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
     </form>
   );

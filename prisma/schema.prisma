@@ -50,6 +50,7 @@ model Order {
   trackingNumber        String?
   adminNote             String?
   fulfilledAt           DateTime?
+  shippingNotifiedAt    DateTime?
   items                 OrderItem[]
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt

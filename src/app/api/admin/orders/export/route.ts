@@ -72,6 +72,7 @@ export async function GET(request: Request) {
     ,"Tracking Number"
     ,"Internal Note"
     ,"Fulfilled At"
+    ,"Shipping Email Sent At"
   ];
 
   const rows = orders.map((order) => [
@@ -102,7 +103,8 @@ export async function GET(request: Request) {
     order.carrier || "",
     order.trackingNumber || "",
     order.adminNote || "",
-    order.fulfilledAt?.toISOString() || ""
+    order.fulfilledAt?.toISOString() || "",
+    order.shippingNotifiedAt?.toISOString() || ""
   ]);
 
   const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");

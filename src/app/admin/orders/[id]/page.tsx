@@ -110,6 +110,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
               <DetailRow label="Provider" value={order.paymentProvider} />
               <DetailRow label="Fulfillment" value={order.fulfillmentStatus.replaceAll("_", " ")} />
               <DetailRow label="Fulfilled At" value={order.fulfilledAt ? order.fulfilledAt.toISOString() : ""} />
+              <DetailRow label="Shipping Email" value={order.shippingNotifiedAt ? order.shippingNotifiedAt.toISOString() : "Not sent"} />
             </dl>
           </section>
 
