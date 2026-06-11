@@ -51,6 +51,7 @@ model Order {
   adminNote             String?
   fulfilledAt           DateTime?
   shippingNotifiedAt    DateTime?
+  inventoryDeductedAt   DateTime?
   items                 OrderItem[]
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -84,4 +85,13 @@ model AnalyticsEvent {
   @@index([eventType, createdAt])
   @@index([productSku, eventType, createdAt])
   @@index([sessionId, createdAt])
+}
+
+model Inventory {
+  id                String   @id @default(cuid())
+  sku               String   @unique
+  quantity          Int      @default(0)
+  lowStockThreshold Int      @default(10)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

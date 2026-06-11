@@ -5,6 +5,7 @@ import {
   sendCustomerRefundNotification,
   sendOrderNotification
 } from "@/lib/email";
+import { products } from "@/data/products";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -80,15 +81,34 @@ export async function POST(request: Request) {
       const paymentIntent =
         typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null;
 
-      const paidOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: "paid",
-          stripeSessionId: session.id,
-          stripePaymentIntentId: paymentIntent,
-          paidAt: new Date()
-        },
-        include: { items: true }
+      const paidOrder = await prisma.$transaction(async (transaction) => {
+        const inventoryClaim = await transaction.order.updateMany({
+          where: { id: orderId, inventoryDeductedAt: null },
+          data: { inventoryDeductedAt: new Date() }
+        });
+        const order = await transaction.order.update({
+          where: { id: orderId },
+          data: {
+            status: "paid",
+            stripeSessionId: session.id,
+            stripePaymentIntentId: paymentIntent,
+            paidAt: new Date()
+          },
+          include: { items: true }
+        });
+
+        if (inventoryClaim.count === 1) {
+          for (const item of existingOrder.items) {
+            const initialQuantity = products.find((product) => product.sku === item.sku)?.inventoryQuantity || 0;
+            await transaction.inventory.upsert({
+              where: { sku: item.sku },
+              update: { quantity: { decrement: item.quantity } },
+              create: { sku: item.sku, quantity: Math.max(0, initialQuantity - item.quantity), lowStockThreshold: 10 }
+            });
+          }
+        }
+
+        return order;
       });
 
       try {

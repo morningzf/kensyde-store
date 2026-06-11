@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { products } from "@/data/products";
+import { validateInventory } from "@/lib/inventory";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -120,6 +121,7 @@ export async function POST(request: Request) {
 
     const checkoutCustomer = validateCustomer(customer);
     const validatedItems = validateItems(items);
+    await validateInventory(validatedItems);
     const subtotal = validatedItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const shipping = validatedItems.length > 0 ? 6.95 : 0;
     const total = subtotal + shipping;

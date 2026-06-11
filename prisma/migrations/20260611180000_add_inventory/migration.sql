@@ -1,0 +1,14 @@
+ALTER TABLE "Order"
+ADD COLUMN IF NOT EXISTS "inventoryDeductedAt" TIMESTAMP(3);
+
+CREATE TABLE IF NOT EXISTS "Inventory" (
+  "id" TEXT NOT NULL,
+  "sku" TEXT NOT NULL,
+  "quantity" INTEGER NOT NULL DEFAULT 0,
+  "lowStockThreshold" INTEGER NOT NULL DEFAULT 10,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "Inventory_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "Inventory_sku_key" ON "Inventory"("sku");
