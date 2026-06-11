@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatPrice, products } from "@/data/products";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
@@ -14,36 +15,82 @@ type ProductMetrics = {
   carts: number;
 };
 
+type TrendPoint = {
+  label: string;
+  views: number;
+  visitors: Set<string>;
+  productViews: number;
+  carts: number;
+  checkouts: number;
+  orders: number;
+  revenue: number;
+};
+
+const ranges = [
+  { value: "today", label: "Today", days: 1 },
+  { value: "7d", label: "7 Days", days: 7 },
+  { value: "30d", label: "30 Days", days: 30 },
+  { value: "90d", label: "90 Days", days: 90 }
+] as const;
+
 function percent(numerator: number, denominator: number) {
   return denominator > 0 ? `${((numerator / denominator) * 100).toFixed(1)}%` : "0.0%";
 }
 
-export default async function AdminAnalyticsPage() {
+function changePercent(current: number, previous: number) {
+  if (previous === 0) return current > 0 ? "+100%" : "0%";
+  const value = ((current - previous) / previous) * 100;
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function dateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function weekKey(date: Date) {
+  const start = new Date(date);
+  const day = start.getUTCDay();
+  start.setUTCDate(start.getUTCDate() - day);
+  return dateKey(start);
+}
+
+function createTrendPoint(label: string): TrendPoint {
+  return { label, views: 0, visitors: new Set(), productViews: 0, carts: 0, checkouts: 0, orders: 0, revenue: 0 };
+}
+
+export default async function AdminAnalyticsPage({
+  searchParams
+}: {
+  searchParams: { range?: string };
+}) {
   if (!isAdminAuthenticated()) {
     redirect("/admin/login");
   }
 
-  const since = new Date();
-  since.setDate(since.getDate() - 30);
+  const selectedRange = ranges.find((range) => range.value === searchParams.range) || ranges[2];
+  const now = new Date();
+  const since = new Date(now);
+  since.setUTCHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - (selectedRange.days - 1));
+  const previousSince = new Date(since);
+  previousSince.setUTCDate(previousSince.getUTCDate() - selectedRange.days);
 
-  const [eventGroups, uniqueSessions, productEvents, pageGroups, paidOrders, paidRevenue] = await Promise.all([
-    prisma.analyticsEvent.groupBy({
-      by: ["eventType"],
-      where: { createdAt: { gte: since } },
-      _count: { _all: true }
-    }),
+  const [events, previousEvents, orders, previousOrders, pageGroups] = await Promise.all([
     prisma.analyticsEvent.findMany({
       where: { createdAt: { gte: since } },
-      select: { sessionId: true },
-      distinct: ["sessionId"]
+      select: { eventType: true, sessionId: true, path: true, productSku: true, createdAt: true }
     }),
     prisma.analyticsEvent.findMany({
-      where: {
-        createdAt: { gte: since },
-        productSku: { not: null },
-        eventType: { in: ["product_impression", "product_click", "product_view", "add_to_cart"] }
-      },
-      select: { eventType: true, productSku: true }
+      where: { createdAt: { gte: previousSince, lt: since } },
+      select: { eventType: true, sessionId: true }
+    }),
+    prisma.order.findMany({
+      where: { status: "paid", paidAt: { gte: since } },
+      select: { paidAt: true, total: true }
+    }),
+    prisma.order.findMany({
+      where: { status: "paid", paidAt: { gte: previousSince, lt: since } },
+      select: { total: true }
     }),
     prisma.analyticsEvent.groupBy({
       by: ["path"],
@@ -51,35 +98,28 @@ export default async function AdminAnalyticsPage() {
       _count: { _all: true },
       orderBy: { _count: { path: "desc" } },
       take: 8
-    }),
-    prisma.order.count({ where: { status: "paid", paidAt: { gte: since } } }),
-    prisma.order.aggregate({
-      where: { status: "paid", paidAt: { gte: since } },
-      _sum: { total: true }
     })
   ]);
 
-  const counts = Object.fromEntries(eventGroups.map((group) => [group.eventType, group._count._all])) as Record<string, number>;
-  const checkoutStarts = counts.checkout_started || 0;
+  const eventCount = (eventType: string, source: Array<{ eventType: string }> = events) =>
+    source.filter((event) => event.eventType === eventType).length;
+  const visitors = new Set(events.map((event) => event.sessionId)).size;
+  const previousVisitors = new Set(previousEvents.map((event) => event.sessionId)).size;
+  const checkoutStarts = eventCount("checkout_started");
+  const paidRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
+  const previousRevenue = previousOrders.reduce((sum, order) => sum + Number(order.total), 0);
+
   const productMetrics = new Map<string, ProductMetrics>(
     products.map((product) => [
       product.sku,
-      {
-        sku: product.sku,
-        color: product.colorName,
-        impressions: 0,
-        clicks: 0,
-        views: 0,
-        carts: 0
-      }
+      { sku: product.sku, color: product.colorName, impressions: 0, clicks: 0, views: 0, carts: 0 }
     ])
   );
 
-  productEvents.forEach((event) => {
+  events.forEach((event) => {
     if (!event.productSku) return;
     const metric = productMetrics.get(event.productSku);
     if (!metric) return;
-
     if (event.eventType === "product_impression") metric.impressions += 1;
     if (event.eventType === "product_click") metric.clicks += 1;
     if (event.eventType === "product_view") metric.views += 1;
@@ -87,38 +127,149 @@ export default async function AdminAnalyticsPage() {
   });
 
   const metrics = Array.from(productMetrics.values()).sort((a, b) => b.impressions - a.impressions);
+  const dailyPoints = new Map<string, TrendPoint>();
+  for (let day = new Date(since); day <= now; day.setUTCDate(day.getUTCDate() + 1)) {
+    const key = dateKey(day);
+    dailyPoints.set(key, createTrendPoint(key));
+  }
+
+  events.forEach((event) => {
+    const point = dailyPoints.get(dateKey(event.createdAt));
+    if (!point) return;
+    point.visitors.add(event.sessionId);
+    if (event.eventType === "page_view") point.views += 1;
+    if (event.eventType === "product_view") point.productViews += 1;
+    if (event.eventType === "add_to_cart") point.carts += 1;
+    if (event.eventType === "checkout_started") point.checkouts += 1;
+  });
+  orders.forEach((order) => {
+    if (!order.paidAt) return;
+    const point = dailyPoints.get(dateKey(order.paidAt));
+    if (!point) return;
+    point.orders += 1;
+    point.revenue += Number(order.total);
+  });
+
+  const daily = Array.from(dailyPoints.values());
+  const weeklyMap = new Map<string, TrendPoint>();
+  daily.forEach((day) => {
+    const key = weekKey(new Date(`${day.label}T00:00:00.000Z`));
+    const point = weeklyMap.get(key) || createTrendPoint(key);
+    point.views += day.views;
+    point.productViews += day.productViews;
+    point.carts += day.carts;
+    point.checkouts += day.checkouts;
+    point.orders += day.orders;
+    point.revenue += day.revenue;
+    day.visitors.forEach((session) => point.visitors.add(session));
+    weeklyMap.set(key, point);
+  });
+  const weekly = Array.from(weeklyMap.values()).reverse();
+  const maxDailyViews = Math.max(1, ...daily.map((day) => day.views));
+
   const cards = [
-    { label: "Visitors", value: uniqueSessions.length.toLocaleString(), note: "Anonymous browser sessions" },
-    { label: "Page Views", value: (counts.page_view || 0).toLocaleString(), note: "Pages opened" },
-    { label: "Product Views", value: (counts.product_view || 0).toLocaleString(), note: "Product detail visits" },
-    { label: "Add to Cart", value: (counts.add_to_cart || 0).toLocaleString(), note: "Cart actions" },
-    { label: "Checkout Starts", value: checkoutStarts.toLocaleString(), note: "Stripe checkout attempts" },
-    { label: "Paid Orders", value: paidOrders.toLocaleString(), note: `${percent(paidOrders, checkoutStarts)} of checkout starts` }
+    { label: "Visitors", value: visitors, previous: previousVisitors, note: "Anonymous browser sessions" },
+    { label: "Page Views", value: eventCount("page_view"), previous: eventCount("page_view", previousEvents), note: "Pages opened" },
+    { label: "Product Views", value: eventCount("product_view"), previous: eventCount("product_view", previousEvents), note: "Product detail visits" },
+    { label: "Add to Cart", value: eventCount("add_to_cart"), previous: eventCount("add_to_cart", previousEvents), note: "Cart actions" },
+    { label: "Checkout Starts", value: checkoutStarts, previous: eventCount("checkout_started", previousEvents), note: "Stripe checkout attempts" },
+    { label: "Paid Orders", value: orders.length, previous: previousOrders.length, note: `${percent(orders.length, checkoutStarts)} of checkout starts` }
   ];
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-      <div className="border-b border-line pb-7">
-        <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">KENSYDE Admin</p>
-        <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">Analytics</h1>
-        <p className="mt-2 text-sm text-muted">First-party performance from the last 30 days. No customer names, emails, or full IP addresses are recorded.</p>
+      <div className="flex flex-col justify-between gap-5 border-b border-line pb-7 md:flex-row md:items-end">
+        <div>
+          <p className="font-heading text-xs font-semibold uppercase tracking-[0.18em] text-sand">KENSYDE Admin</p>
+          <h1 className="mt-2 font-heading text-3xl font-extrabold text-navy">Analytics</h1>
+          <p className="mt-2 text-sm text-muted">First-party storefront performance with comparison to the previous period.</p>
+        </div>
+        <div className="flex flex-wrap rounded border border-line bg-white p-1">
+          {ranges.map((range) => (
+            <Link
+              key={range.value}
+              href={`/admin/analytics?range=${range.value}`}
+              className={`rounded px-4 py-2 font-heading text-xs font-semibold ${
+                selectedRange.value === range.value ? "bg-navy text-white" : "text-muted hover:text-navy"
+              }`}
+            >
+              {range.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <div key={card.label} className="rounded border border-line bg-white p-5">
-            <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">{card.label}</p>
-            <p className="mt-2 font-heading text-2xl font-bold text-navy">{card.value}</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-muted">{card.label}</p>
+              <span className={`text-xs font-semibold ${card.value >= card.previous ? "text-emerald-700" : "text-red-700"}`}>
+                {changePercent(card.value, card.previous)}
+              </span>
+            </div>
+            <p className="mt-2 font-heading text-2xl font-bold text-navy">{card.value.toLocaleString()}</p>
             <p className="mt-2 text-xs text-muted">{card.note}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-6 rounded border border-line bg-navy p-6 text-white">
-        <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-sand">Paid Revenue</p>
-        <p className="mt-2 font-heading text-3xl font-bold">{formatPrice(Number(paidRevenue._sum.total || 0))}</p>
-        <p className="mt-2 text-sm text-white/65">Paid, non-refunded orders recorded during this period.</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-sand">Paid Revenue</p>
+            <p className="mt-2 font-heading text-3xl font-bold">{formatPrice(paidRevenue)}</p>
+            <p className="mt-2 text-sm text-white/65">Paid, non-refunded orders during the selected period.</p>
+          </div>
+          <span className={`text-sm font-semibold ${paidRevenue >= previousRevenue ? "text-emerald-300" : "text-red-300"}`}>
+            {changePercent(paidRevenue, previousRevenue)}
+          </span>
+        </div>
       </div>
+
+      <section className="mt-7 rounded border border-line bg-white p-5">
+        <div>
+          <h2 className="font-heading text-base font-semibold text-navy">Daily Traffic Trend</h2>
+          <p className="mt-1 text-xs text-muted">Bars show page views. The table includes daily funnel activity.</p>
+        </div>
+        <div className="mt-6 flex h-36 items-end gap-1 overflow-hidden border-b border-line">
+          {daily.map((day) => (
+            <div key={day.label} className="group relative flex min-w-1 flex-1 items-end justify-center" title={`${day.label}: ${day.views} page views`}>
+              <div className="w-full max-w-5 bg-sand transition hover:bg-navy" style={{ height: `${Math.max(3, (day.views / maxDailyViews) * 100)}%` }} />
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="bg-cream text-xs uppercase tracking-[0.08em] text-muted">
+              <tr>
+                <th className="px-4 py-3 font-heading font-semibold">Date</th>
+                <th className="px-4 py-3 font-heading font-semibold">Visitors</th>
+                <th className="px-4 py-3 font-heading font-semibold">Page Views</th>
+                <th className="px-4 py-3 font-heading font-semibold">Product Views</th>
+                <th className="px-4 py-3 font-heading font-semibold">Add to Cart</th>
+                <th className="px-4 py-3 font-heading font-semibold">Checkout</th>
+                <th className="px-4 py-3 font-heading font-semibold">Orders</th>
+                <th className="px-4 py-3 font-heading font-semibold">Revenue</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {[...daily].reverse().slice(0, selectedRange.value === "90d" ? 31 : daily.length).map((day) => (
+                <tr key={day.label}>
+                  <td className="px-4 py-3 font-heading font-semibold text-navy">{day.label}</td>
+                  <td className="px-4 py-3 text-muted">{day.visitors.size}</td>
+                  <td className="px-4 py-3 text-muted">{day.views}</td>
+                  <td className="px-4 py-3 text-muted">{day.productViews}</td>
+                  <td className="px-4 py-3 text-muted">{day.carts}</td>
+                  <td className="px-4 py-3 text-muted">{day.checkouts}</td>
+                  <td className="px-4 py-3 text-muted">{day.orders}</td>
+                  <td className="px-4 py-3 font-heading font-semibold text-navy">{formatPrice(day.revenue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.5fr_0.7fr]">
         <section className="overflow-hidden rounded border border-line bg-white">
@@ -157,23 +308,42 @@ export default async function AdminAnalyticsPage() {
           </div>
         </section>
 
-        <section className="rounded border border-line bg-white">
-          <div className="border-b border-line px-5 py-4">
-            <h2 className="font-heading text-base font-semibold text-navy">Top Pages</h2>
-          </div>
-          <div className="divide-y divide-line">
-            {pageGroups.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-muted">Analytics will appear after new visits.</p>
-            ) : (
-              pageGroups.map((page) => (
-                <div key={page.path} className="flex items-center justify-between gap-4 px-5 py-4 text-sm">
-                  <span className="break-all text-charcoal">{page.path}</span>
-                  <span className="font-heading font-semibold text-navy">{page._count._all}</span>
+        <div className="space-y-6">
+          <section className="rounded border border-line bg-white">
+            <div className="border-b border-line px-5 py-4">
+              <h2 className="font-heading text-base font-semibold text-navy">Weekly Summary</h2>
+            </div>
+            <div className="divide-y divide-line">
+              {weekly.map((week) => (
+                <div key={week.label} className="px-5 py-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="font-heading text-sm font-semibold text-navy">Week of {week.label}</span>
+                    <span className="font-heading text-sm font-semibold text-navy">{formatPrice(week.revenue)}</span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted">{week.visitors.size} visitors · {week.views} views · {week.orders} orders</p>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded border border-line bg-white">
+            <div className="border-b border-line px-5 py-4">
+              <h2 className="font-heading text-base font-semibold text-navy">Top Pages</h2>
+            </div>
+            <div className="divide-y divide-line">
+              {pageGroups.length === 0 ? (
+                <p className="px-5 py-10 text-center text-sm text-muted">Analytics will appear after new visits.</p>
+              ) : (
+                pageGroups.map((page) => (
+                  <div key={page.path} className="flex items-center justify-between gap-4 px-5 py-4 text-sm">
+                    <span className="break-all text-charcoal">{page.path}</span>
+                    <span className="font-heading font-semibold text-navy">{page._count._all}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </section>
   );
