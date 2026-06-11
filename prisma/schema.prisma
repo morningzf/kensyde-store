@@ -45,6 +45,11 @@ model Order {
   stripePaymentIntentId String?
   refundedAmount        Decimal     @default(0) @db.Decimal(10, 2)
   paidAt                DateTime?
+  fulfillmentStatus     String      @default("unfulfilled")
+  carrier               String?
+  trackingNumber        String?
+  adminNote             String?
+  fulfilledAt           DateTime?
   items                 OrderItem[]
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt

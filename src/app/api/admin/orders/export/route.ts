@@ -67,6 +67,11 @@ export async function GET(request: Request) {
     "Payment Provider",
     "Stripe Session ID",
     "Stripe Payment Intent ID"
+    ,"Fulfillment Status"
+    ,"Carrier"
+    ,"Tracking Number"
+    ,"Internal Note"
+    ,"Fulfilled At"
   ];
 
   const rows = orders.map((order) => [
@@ -92,7 +97,12 @@ export async function GET(request: Request) {
     order.currency.toUpperCase(),
     order.paymentProvider,
     order.stripeSessionId || "",
-    order.stripePaymentIntentId || ""
+    order.stripePaymentIntentId || "",
+    order.fulfillmentStatus,
+    order.carrier || "",
+    order.trackingNumber || "",
+    order.adminNote || "",
+    order.fulfilledAt?.toISOString() || ""
   ]);
 
   const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");

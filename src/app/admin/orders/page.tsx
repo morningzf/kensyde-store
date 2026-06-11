@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { ArrowRight, Download, LogOut, Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AdminStatusBadge } from "@/components/AdminStatusBadge";
+import { AdminFulfillmentBadge, AdminStatusBadge } from "@/components/AdminStatusBadge";
 import { formatPrice } from "@/data/products";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
@@ -140,6 +140,7 @@ export default async function AdminOrdersPage({
                   <th className="px-5 py-3 font-heading font-semibold">Order</th>
                   <th className="px-5 py-3 font-heading font-semibold">Customer</th>
                   <th className="px-5 py-3 font-heading font-semibold">Status</th>
+                  <th className="px-5 py-3 font-heading font-semibold">Fulfillment</th>
                   <th className="px-5 py-3 font-heading font-semibold">Items</th>
                   <th className="px-5 py-3 font-heading font-semibold">Total</th>
                   <th className="px-5 py-3 font-heading font-semibold">Created</th>
@@ -155,6 +156,7 @@ export default async function AdminOrdersPage({
                       <p className="mt-1 text-xs text-muted">{order.customerEmail}</p>
                     </td>
                     <td className="px-5 py-4"><AdminStatusBadge status={order.status} /></td>
+                    <td className="px-5 py-4"><AdminFulfillmentBadge status={order.fulfillmentStatus} /></td>
                     <td className="px-5 py-4 text-muted">{order._count.items}</td>
                     <td className="px-5 py-4 font-heading font-semibold text-navy">{formatPrice(Number(order.total))}</td>
                     <td className="px-5 py-4 text-muted">

@@ -2,7 +2,8 @@ import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AdminStatusBadge } from "@/components/AdminStatusBadge";
+import { AdminFulfillmentBadge, AdminStatusBadge } from "@/components/AdminStatusBadge";
+import { AdminFulfillmentForm } from "@/components/AdminFulfillmentForm";
 import { formatPrice } from "@/data/products";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
@@ -51,7 +52,10 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             Created {new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "short" }).format(order.createdAt)}
           </p>
         </div>
-        <AdminStatusBadge status={order.status} />
+        <div className="flex flex-wrap gap-2">
+          <AdminStatusBadge status={order.status} />
+          <AdminFulfillmentBadge status={order.fulfillmentStatus} />
+        </div>
       </div>
 
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.35fr_0.8fr]">
@@ -87,6 +91,14 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
         </div>
 
         <div className="space-y-6">
+          <AdminFulfillmentForm
+            orderId={order.id}
+            initialStatus={order.fulfillmentStatus}
+            initialCarrier={order.carrier || ""}
+            initialTrackingNumber={order.trackingNumber || ""}
+            initialNote={order.adminNote || ""}
+          />
+
           <section className="rounded border border-line bg-white p-5">
             <h2 className="font-heading text-base font-semibold text-navy">Payment Summary</h2>
             <dl className="mt-3">
@@ -96,6 +108,8 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
               <DetailRow label="Refunded" value={formatPrice(Number(order.refundedAmount))} />
               <DetailRow label="Currency" value={order.currency.toUpperCase()} />
               <DetailRow label="Provider" value={order.paymentProvider} />
+              <DetailRow label="Fulfillment" value={order.fulfillmentStatus.replaceAll("_", " ")} />
+              <DetailRow label="Fulfilled At" value={order.fulfilledAt ? order.fulfilledAt.toISOString() : ""} />
             </dl>
           </section>
 
