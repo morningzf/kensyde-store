@@ -7,6 +7,12 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 
 const statuses = new Set(["pending", "paid", "failed", "cancelled", "refunded", "partially_refunded"]);
+const fulfillmentStatuses = new Set(["unfulfilled", "processing", "shipped", "delivered"]);
+
+function getDate(value: string, endOfDay = false) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  return new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}+08:00`);
+}
 
 function csvCell(value: string | number | null | undefined) {
   let text = String(value ?? "");
@@ -25,9 +31,18 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status")?.trim() || "";
+  const fulfillment = searchParams.get("fulfillment")?.trim() || "";
   const query = searchParams.get("q")?.trim().slice(0, 120) || "";
+  const from = searchParams.get("from")?.trim() || "";
+  const to = searchParams.get("to")?.trim() || "";
+  const createdAt = {
+    ...(getDate(from) ? { gte: getDate(from) } : {}),
+    ...(getDate(to, true) ? { lte: getDate(to, true) } : {})
+  };
   const where: Prisma.OrderWhereInput = {
     ...(statuses.has(status) ? { status } : {}),
+    ...(fulfillmentStatuses.has(fulfillment) ? { fulfillmentStatus: fulfillment } : {}),
+    ...(Object.keys(createdAt).length > 0 ? { createdAt } : {}),
     ...(query
       ? {
           OR: [
