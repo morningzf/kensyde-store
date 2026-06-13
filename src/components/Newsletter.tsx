@@ -2,12 +2,14 @@ import { Button } from "@/components/Button";
 
 export function Newsletter() {
   return (
-    <section className="bg-white">
-      <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
-        <div className="grid items-center gap-8 border-y border-line py-12 md:grid-cols-[1fr_1.2fr]">
+    <section className="bg-[#F5F1E9]">
+      <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-20">
+        <div className="grid items-center gap-8 md:grid-cols-[1fr_1.2fr]">
           <div>
-            <h2 className="font-heading text-3xl font-bold text-navy">Stay In The Flow</h2>
-            <p className="mt-3 text-muted">Subscribe for product updates and exclusive offers.</p>
+            <h2 className="font-editorial text-4xl font-semibold text-ink md:text-5xl">Stay in the Flow.</h2>
+            <p className="mt-4 max-w-md text-sm leading-6 text-muted">
+              New colors, early access, and quiet inspiration. Straight to your inbox.
+            </p>
           </div>
           <form className="flex flex-col gap-3 sm:flex-row">
             <label className="sr-only" htmlFor="newsletter-email">
@@ -16,10 +18,10 @@ export function Newsletter() {
             <input
               id="newsletter-email"
               type="email"
-              placeholder="Email address"
-              className="min-h-12 flex-1 rounded border border-line bg-cream px-4 text-charcoal outline-none focus:border-sand"
+              placeholder="Your email"
+              className="min-h-12 flex-1 rounded-none border border-white bg-white/70 px-4 text-charcoal outline-none focus:border-clay"
             />
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" className="rounded-none bg-ink px-7 hover:bg-clay">
               Subscribe
             </Button>
           </form>

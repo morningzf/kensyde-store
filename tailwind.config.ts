@@ -14,11 +14,16 @@ const config: Config = {
         cream: "#F8F5EF",
         charcoal: "#2F2F2F",
         muted: "#777777",
-        line: "#E6E2DA"
+        line: "#E6E2DA",
+        warm: "#F5F1E9",
+        sage: "#87927A",
+        clay: "#8B624D",
+        ink: "#1D1D1B"
       },
       fontFamily: {
         heading: ["Montserrat", "Arial", "sans-serif"],
-        body: ["Inter", "Arial", "sans-serif"]
+        body: ["Inter", "Arial", "sans-serif"],
+        editorial: ["Cormorant Garamond", "Georgia", "serif"]
       },
       boxShadow: {
         soft: "0 18px 50px rgba(10, 46, 77, 0.08)"

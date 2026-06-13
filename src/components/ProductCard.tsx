@@ -9,8 +9,15 @@ import { formatPrice } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/Button";
 import { trackEvent } from "@/lib/analytics";
+import { getBrandColorName, getLifestyleTag } from "@/lib/product-display";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  presentation = "default",
+}: {
+  product: Product;
+  presentation?: "default" | "editorial";
+}) {
   const { addItem } = useCart();
   const cardRef = useRef<HTMLElement>(null);
 
@@ -31,6 +38,51 @@ export function ProductCard({ product }: { product: Product }) {
     observer.observe(element);
     return () => observer.disconnect();
   }, [product.sku, product.slug]);
+
+  if (presentation === "editorial") {
+    return (
+      <article ref={cardRef} className="group flex h-full min-w-0 flex-col">
+        <Link
+          href={`/product/${product.slug}`}
+          className="block overflow-hidden bg-white/65"
+          onClick={() => trackEvent({ eventType: "product_click", productSku: product.sku, productSlug: product.slug })}
+        >
+          <div className="relative aspect-[4/5]">
+            <Image
+              src={product.image}
+              alt={product.altText || product.name}
+              fill
+              sizes="(min-width: 1024px) 16vw, (min-width: 640px) 33vw, 50vw"
+              className="object-contain p-2 transition duration-500 group-hover:scale-[1.025]"
+            />
+          </div>
+        </Link>
+        <div className="flex flex-1 flex-col pt-4">
+          <Link
+            href={`/product/${product.slug}`}
+            onClick={() => trackEvent({ eventType: "product_click", productSku: product.sku, productSlug: product.slug })}
+          >
+            <h3 className="font-heading text-sm font-semibold text-ink transition group-hover:text-clay">
+              {getBrandColorName(product)}
+            </h3>
+          </Link>
+          <p className="mt-1 text-xs text-muted">{getLifestyleTag(product)}</p>
+          <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+            <span className="text-sm font-medium text-ink">{formatPrice(product.price)}</span>
+            <button
+              className="text-xs font-semibold uppercase tracking-[0.08em] text-ink underline decoration-sand underline-offset-4 transition hover:text-clay"
+              onClick={() => {
+                addItem(product);
+                trackEvent({ eventType: "add_to_cart", productSku: product.sku, productSlug: product.slug });
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article ref={cardRef} className="group flex h-full flex-col overflow-hidden rounded-lg border border-line bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-soft">
