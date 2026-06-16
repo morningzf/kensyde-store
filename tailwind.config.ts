@@ -21,9 +21,9 @@ const config: Config = {
         ink: "#1D1D1B"
       },
       fontFamily: {
-        heading: ["Montserrat", "Arial", "sans-serif"],
+        heading: ["Inter", "Arial", "sans-serif"],
         body: ["Inter", "Arial", "sans-serif"],
-        editorial: ["Cormorant Garamond", "Georgia", "serif"]
+        editorial: ["Inter", "Arial", "sans-serif"]
       },
       boxShadow: {
         soft: "0 18px 50px rgba(10, 46, 77, 0.08)"

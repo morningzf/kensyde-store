@@ -8,6 +8,6 @@ export const metadata = pageSeo({
   path: "/shop"
 });
 
-export default function ShopPage() {
-  return <ShopClient />;
+export default function ShopPage({ searchParams }: { searchParams?: { search?: string } }) {
+  return <ShopClient initialQuery={searchParams?.search ?? ""} />;
 }

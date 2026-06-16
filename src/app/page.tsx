@@ -1,12 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Hand, ShieldCheck, Thermometer, Waves } from "lucide-react";
-import { Button } from "@/components/Button";
+import { ArrowUpRight, Hand, ShieldCheck, Thermometer, Waves } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 import { ProductCard } from "@/components/ProductCard";
+import { ColorShowcase } from "@/components/ColorShowcase";
 import { pageSeo } from "@/lib/seo";
 import { products } from "@/data/products";
-import { getBrandColorName } from "@/lib/product-display";
 
 export const metadata = pageSeo({
   title: "KENSYDE | 12oz Ring Handle Insulated Tumbler",
@@ -22,88 +21,98 @@ const details = [
 ];
 
 const scenes = [
-  { title: "Morning Coffee", image: "/lifestyle/scene-daily.jpg", alt: "KENSYDE tumbler in a quiet morning coffee setting" },
-  { title: "Work Desk", image: "/lifestyle/scene-office.jpg", alt: "KENSYDE tumbler on a naturally lit work desk" },
-  { title: "Daily Commute", image: "/lifestyle/scene-travel.jpg", alt: "KENSYDE tumbler prepared for a daily commute" },
-  { title: "Outdoor Rest", image: "/lifestyle/scene-outdoor.jpg", alt: "KENSYDE tumbler in a quiet outdoor setting" },
+  {
+    title: "Morning Coffee",
+    image: "/lifestyle/quiet-carry-v2/scene-morning.jpg",
+    alt: "Oat Cream KENSYDE tumbler beside an open book in soft morning light",
+    position: "object-[54%_52%]",
+  },
+  {
+    title: "Work Desk",
+    image: "/lifestyle/quiet-carry-v2/scene-work.jpg",
+    alt: "Matte Black KENSYDE tumbler beside a laptop and work bag",
+    position: "object-[52%_52%]",
+  },
+  {
+    title: "Daily Commute",
+    image: "/lifestyle/quiet-carry-v2/scene-commute.jpg",
+    alt: "Soft Rose KENSYDE tumbler ready for a quiet daily commute",
+    position: "object-[58%_52%]",
+  },
+  {
+    title: "Outdoor Rest",
+    image: "/lifestyle/quiet-carry-v2/scene-outdoor.jpg",
+    alt: "Forest Green KENSYDE tumbler resting beside a park lake",
+    position: "object-[46%_52%]",
+  },
 ];
 
 export default function HomePage() {
   return (
     <div className="bg-warm text-ink">
-      <div className="mx-auto max-w-[112rem] border-x border-white/80">
-        <div className="grid border-b border-white/80 lg:grid-cols-[1.7fr_1fr]">
-          <section className="relative min-h-[34rem] overflow-hidden border-white/80 lg:min-h-[39rem] lg:border-r">
-            <Image
-              src="/lifestyle/scene-office.jpg"
-              alt="KENSYDE tumblers in a naturally lit everyday work setting"
-              fill
-              priority
-              sizes="(min-width: 1024px) 64vw, 100vw"
-              className="object-cover object-center"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-warm/95 via-warm/75 to-transparent" />
-            <div className="relative flex min-h-[34rem] items-center px-6 py-14 sm:px-12 lg:min-h-[39rem] lg:px-16 xl:px-24">
-              <div className="max-w-[29rem]">
-                <h1 className="font-editorial text-5xl font-semibold leading-[0.92] text-ink sm:text-6xl xl:text-7xl">
-                  Made for
-                  <br />
-                  Everyday Flow.
-                </h1>
-                <p className="mt-7 max-w-md text-sm leading-7 text-ink/75 sm:text-base">
-                  Compact insulated drinkware for coffee, commute, travel, and quiet outdoor moments.
-                </p>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <Button href="/shop" className="rounded-none bg-ink px-6 text-white hover:bg-clay">
-                    Shop 12oz Tumblers
-                  </Button>
-                  <Button href="/#colors" variant="outline" className="rounded-none border-ink/40 bg-warm/50 px-6 text-ink">
-                    Explore Colors
-                  </Button>
-                </div>
+      <div className="mx-auto max-w-[112rem]">
+        <section className="relative min-h-[38rem] overflow-hidden bg-[#C8B59A] sm:min-h-[43rem] lg:min-h-[calc(100vh-6.5rem)]">
+          <Image
+            src="/lifestyle/quiet-carry-v2/quiet-carry-hero.jpg"
+            alt="Oat Cream KENSYDE Quiet Carry tumbler beside a tote bag and daily essentials"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-[62%_center] sm:object-[58%_center]"
+          />
+          <div className="absolute inset-0 bg-black/25" />
+          <div className="relative z-10 flex min-h-[38rem] items-end px-5 pb-9 sm:min-h-[43rem] sm:px-10 sm:pb-12 lg:min-h-[calc(100vh-6.5rem)] lg:px-14 lg:pb-14">
+            <div className="max-w-xl text-white">
+              <p className="mb-4 font-heading text-[11px] font-bold uppercase tracking-[0.12em]">Quiet Carry Collection</p>
+              <h1 className="font-heading text-[2.8rem] font-extrabold leading-[0.96] tracking-[-0.02em] sm:text-6xl lg:text-7xl">
+                Made for Everyday Flow.
+              </h1>
+              <p className="mt-5 max-w-lg text-sm font-medium leading-6 text-white/95 sm:text-base">
+                Compact insulated drinkware for coffee, commute, travel, and quiet outdoor moments.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href="/shop"
+                  className="inline-flex min-h-11 items-center justify-center border border-white bg-white px-7 py-3 font-heading text-sm font-bold text-black transition hover:border-black hover:bg-black hover:text-white"
+                >
+                  Shop Now
+                </Link>
+                <Link
+                  href="/#colors"
+                  className="inline-flex min-h-11 items-center justify-center border border-white bg-black/15 px-7 py-3 font-heading text-sm font-bold text-white transition hover:bg-white hover:text-black"
+                >
+                  Explore Colors
+                </Link>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section id="colors" className="scroll-mt-24 bg-[#F8F4ED] px-5 py-12 text-center sm:px-8 lg:flex lg:flex-col lg:justify-center lg:py-10">
-            <h2 className="font-editorial text-4xl font-semibold text-ink xl:text-5xl">Find Your Everyday Color.</h2>
-            <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-muted">
-              Six calm shades designed for workdays, weekends, and everything in between.
-            </p>
-            <div className="mt-9 grid grid-cols-3 gap-x-3 gap-y-7">
-              {products.map((product) => (
-                <Link key={product.sku} href={`/product/${product.slug}`} className="group min-w-0">
-                  <div className="relative mx-auto aspect-[3/4] max-w-[7.5rem]">
-                    <Image
-                      src={product.image}
-                      alt={`${getBrandColorName(product)} 12oz Ring Handle Tumbler`}
-                      fill
-                      sizes="(min-width: 1024px) 10vw, 30vw"
-                      className="object-contain transition duration-500 group-hover:-translate-y-1"
-                    />
-                  </div>
-                  <p className="mt-2 truncate font-heading text-[11px] font-medium text-ink">{getBrandColorName(product)}</p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        </div>
+        <ColorShowcase products={products} />
 
         <div className="grid border-b border-white/80 lg:grid-cols-[1.7fr_1fr]">
           <section id="scenes" className="scroll-mt-24 border-white/80 px-5 py-10 lg:border-r lg:px-10">
-            <h2 className="font-editorial text-4xl font-semibold text-ink">From Desk to Weekend.</h2>
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <p className="font-heading text-[9px] font-semibold uppercase tracking-[0.18em] text-clay">One cup, many rhythms</p>
+                <h2 className="mt-2 font-editorial text-4xl font-semibold text-ink">From Desk to Weekend.</h2>
+              </div>
+              <Link href="/shop" className="hidden items-center gap-2 font-heading text-[9px] font-semibold uppercase tracking-[0.12em] text-ink/60 hover:text-clay sm:inline-flex">
+                Explore the collection <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </div>
             <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4">
               {scenes.map((scene) => (
-                <article key={scene.title} className="group relative aspect-[4/3] overflow-hidden bg-[#E7DED2]">
+                <article key={scene.title} className="group relative aspect-[4/5] overflow-hidden bg-[#E7DED2] sm:aspect-[3/4] lg:aspect-[4/5]">
                   <Image
                     src={scene.image}
                     alt={scene.alt}
                     fill
                     sizes="(min-width: 1024px) 16vw, 50vw"
-                    className="object-cover transition duration-700 group-hover:scale-[1.025]"
+                    className={`object-cover transition duration-700 group-hover:scale-[1.025] ${scene.position}`}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-transparent" />
-                  <h3 className="absolute inset-x-0 bottom-0 p-3 text-center font-heading text-[11px] font-medium text-white">
+                  <h3 className="absolute inset-x-0 bottom-0 p-3 text-left font-heading text-[10px] font-semibold uppercase tracking-[0.08em] text-white">
                     {scene.title}
                   </h3>
                 </article>
@@ -111,7 +120,8 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section id="details" className="scroll-mt-24 bg-[#F3EEE6] px-5 py-10 sm:px-8 lg:flex lg:flex-col lg:justify-center">
+          <section id="details" className="scroll-mt-24 bg-[#E9EDE6] px-5 py-10 sm:px-8 lg:flex lg:flex-col lg:justify-center">
+            <p className="text-center font-heading text-[9px] font-semibold uppercase tracking-[0.18em] text-sage">Made to move quietly</p>
             <h2 className="text-center font-editorial text-4xl font-semibold leading-[0.95] text-ink xl:text-5xl">
               Small Details.
               <br />
@@ -131,7 +141,15 @@ export default function HomePage() {
 
         <div className="grid border-b border-white/80 lg:grid-cols-[1.3fr_0.8fr_0.9fr]">
           <section className="border-white/80 px-5 py-10 lg:border-r lg:px-10">
-            <h2 className="font-editorial text-4xl font-semibold text-ink">Best Sellers.</h2>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="font-heading text-[9px] font-semibold uppercase tracking-[0.18em] text-clay">Quiet Carry, six ways</p>
+                <h2 className="mt-2 font-editorial text-4xl font-semibold text-ink">Best Sellers.</h2>
+              </div>
+              <Link href="/shop" className="hidden font-heading text-[9px] font-semibold uppercase tracking-[0.12em] text-ink/60 hover:text-clay sm:block">
+                Shop all
+              </Link>
+            </div>
             <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-7 sm:grid-cols-6">
               {products.map((product) => (
                 <ProductCard key={product.sku} product={product} presentation="editorial" />
@@ -143,14 +161,15 @@ export default function HomePage() {
             <div className="grid h-full sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div className="flex items-center px-6 py-10">
                 <div>
+                  <p className="font-heading text-[9px] font-semibold uppercase tracking-[0.18em] text-clay">The KENSYDE idea</p>
                   <h2 className="font-editorial text-4xl font-semibold leading-[0.95] text-ink">
-                    Designed for
+                    Designed around
                     <br />
-                    Small Escapes.
+                    Everyday Flow.
                   </h2>
                   <p className="mt-5 text-xs leading-6 text-ink/70">
-                    Clean, functional drinkware for quiet routines and open-air moments, from the first coffee at
-                    home to the last stop on the road.
+                    One calm design language, made to move from compact coffee cups to larger daily and outdoor
+                    drinkware as your routine changes.
                   </p>
                   <Link href="/about" className="mt-5 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink underline decoration-clay underline-offset-6">
                     Our Story
@@ -159,11 +178,11 @@ export default function HomePage() {
               </div>
               <div className="relative min-h-[18rem]">
                 <Image
-                  src="/lifestyle/scene-outdoor.jpg"
-                  alt="KENSYDE tumbler resting in a quiet outdoor scene"
+                  src="/lifestyle/quiet-carry-v2/quiet-carry-landscape.jpg"
+                  alt="Forest Green KENSYDE tumbler in a quiet open-air landscape"
                   fill
                   sizes="(min-width: 1280px) 15vw, (min-width: 640px) 50vw, 100vw"
-                  className="object-cover"
+                  className="object-cover object-[62%_52%]"
                 />
               </div>
             </div>

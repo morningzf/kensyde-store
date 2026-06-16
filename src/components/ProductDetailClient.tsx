@@ -51,7 +51,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
   return (
     <section className="mx-auto grid max-w-7xl gap-8 px-5 py-8 md:py-12 lg:grid-cols-[1.08fr_0.82fr] lg:gap-10 lg:px-8">
       <div>
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-white shadow-soft">
+        <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-white">
           <Image
             src={selectedImage}
             alt={product.altText || product.name}
