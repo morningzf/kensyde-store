@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { escapeHtml, sendEmail } from "@/lib/email";
+import { brandEmailTemplate, escapeHtml, sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,14 +53,39 @@ export async function POST(request: Request) {
       to,
       subject: `KENSYDE contact: ${normalized.subject}`,
       replyTo: normalized.email,
-      html: `
-        <h2>New KENSYDE contact message</h2>
-        <p><strong>Name:</strong> ${escapeHtml(normalized.name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(normalized.email)}</p>
-        <p><strong>Subject:</strong> ${escapeHtml(normalized.subject)}</p>
-        <p><strong>Message:</strong></p>
-        <p>${escapeHtml(normalized.message).replace(/\n/g, "<br />")}</p>
-      `
+      html: brandEmailTemplate({
+        eyebrow: "Contact Form",
+        title: "New customer message",
+        intro: "A visitor submitted a message through the KENSYDE contact page.",
+        body: `
+          <div style="border-top:1px solid #ebe5dc;padding:22px 0;">
+            <h2 style="margin:0 0 12px;color:#111111;font-size:14px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;">Customer Details</h2>
+            <table role="presentation" style="width:100%;border-collapse:collapse;" cellPadding="0" cellSpacing="0">
+              <tr>
+                <td style="padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;"><strong>Name</strong></td>
+                <td style="padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;text-align:right;">${escapeHtml(normalized.name)}</td>
+              </tr>
+              <tr>
+                <td style="padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;"><strong>Email</strong></td>
+                <td style="padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;text-align:right;">${escapeHtml(normalized.email)}</td>
+              </tr>
+              <tr>
+                <td style="padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;"><strong>Subject</strong></td>
+                <td style="padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;text-align:right;">${escapeHtml(normalized.subject)}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="border-top:1px solid #ebe5dc;padding:22px 0;">
+            <h2 style="margin:0 0 12px;color:#111111;font-size:14px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;">Message</h2>
+            <div style="background:#f7f3ed;border:1px solid #e8e1d8;padding:16px;color:#5f5952;font-size:14px;line-height:1.7;">
+              ${escapeHtml(normalized.message).replace(/\n/g, "<br />")}
+            </div>
+          </div>
+        `,
+        ctaLabel: "Reply By Email",
+        ctaHref: `mailto:${normalized.email}`,
+        footerNote: "This message was sent from the KENSYDE website contact form."
+      })
     });
 
     return NextResponse.json({ success: true });

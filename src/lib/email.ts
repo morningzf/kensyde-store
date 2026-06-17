@@ -32,6 +32,7 @@ type OrderEmailData = {
 };
 
 const fromEmail = "KENSYDE <support@kensyde.com>";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.kensyde.com";
 
 export const escapeHtml = (value: unknown) =>
   String(value ?? "")
@@ -47,20 +48,195 @@ const money = (value: unknown, currency = "USD") =>
     currency: currency.toUpperCase()
   }).format(Number(value));
 
-const orderItemRows = (order: OrderEmailData) =>
+const emailStyles = {
+  page: "margin:0;background:#f4f1ea;padding:0;font-family:Arial,Helvetica,sans-serif;color:#161616;",
+  shell: "width:100%;background:#f4f1ea;padding:28px 12px;",
+  card:
+    "width:100%;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5ded3;border-radius:0;overflow:hidden;",
+  topbar: "background:#111111;color:#ffffff;text-align:center;padding:10px 18px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;",
+  header: "padding:28px 32px 20px;border-bottom:1px solid #ebe5dc;",
+  logo: "font-size:22px;line-height:1;font-weight:800;letter-spacing:0.18em;color:#111111;margin:0;",
+  eyebrow: "margin:26px 0 10px;color:#9a745d;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;",
+  h1: "margin:0;color:#111111;font-size:30px;line-height:1.12;font-weight:800;",
+  intro: "margin:14px 0 0;color:#55504a;font-size:15px;line-height:1.7;",
+  body: "padding:0 32px 30px;",
+  section: "border-top:1px solid #ebe5dc;padding:22px 0;",
+  sectionTitle: "margin:0 0 12px;color:#111111;font-size:14px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;",
+  muted: "color:#6f6961;font-size:13px;line-height:1.65;",
+  table: "width:100%;border-collapse:collapse;",
+  th: "padding:10px 0;border-bottom:1px solid #e8e1d8;color:#756f68;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;text-align:left;",
+  td: "padding:13px 0;border-bottom:1px solid #f0ebe4;color:#222222;font-size:13px;line-height:1.45;text-align:left;vertical-align:top;",
+  totalRow: "padding:13px 0;border-top:1px solid #111111;color:#111111;font-size:16px;font-weight:800;",
+  button:
+    "display:inline-block;background:#111111;color:#ffffff;text-decoration:none;padding:14px 22px;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;",
+  note: "background:#f7f3ed;border:1px solid #e8e1d8;padding:14px 16px;color:#5f5952;font-size:13px;line-height:1.6;",
+  footer:
+    "background:#111111;color:#d9d1c7;text-align:center;padding:22px 28px;font-size:12px;line-height:1.7;"
+};
+
+type BrandEmailTemplateOptions = {
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  body: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  footerNote?: string;
+};
+
+export function brandEmailTemplate({
+  eyebrow = "KENSYDE",
+  title,
+  intro,
+  body,
+  ctaLabel,
+  ctaHref,
+  footerNote = "For product or order support, reply to this email or contact support@kensyde.com."
+}: BrandEmailTemplateOptions) {
+  const cta =
+    ctaLabel && ctaHref
+      ? `<div style="padding-top:6px;"><a href="${escapeHtml(ctaHref)}" style="${emailStyles.button}">${escapeHtml(
+          ctaLabel
+        )}</a></div>`
+      : "";
+
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${escapeHtml(title)}</title>
+      </head>
+      <body style="${emailStyles.page}">
+        <div style="${emailStyles.shell}">
+          <table role="presentation" style="${emailStyles.card}" cellPadding="0" cellSpacing="0">
+            <tr>
+              <td style="${emailStyles.topbar}">Compact drinkware for everyday flow</td>
+            </tr>
+            <tr>
+              <td style="${emailStyles.header}">
+                <p style="${emailStyles.logo}">KENSYDE</p>
+                <p style="${emailStyles.eyebrow}">${escapeHtml(eyebrow)}</p>
+                <h1 style="${emailStyles.h1}">${escapeHtml(title)}</h1>
+                ${intro ? `<p style="${emailStyles.intro}">${intro}</p>` : ""}
+              </td>
+            </tr>
+            <tr>
+              <td style="${emailStyles.body}">
+                ${body}
+                ${cta}
+              </td>
+            </tr>
+            <tr>
+              <td style="${emailStyles.footer}">
+                <strong style="color:#ffffff;">KENSYDE</strong><br />
+                ${escapeHtml(footerNote)}<br />
+                <span style="color:#9f968d;">United States / United Kingdom / Germany / France</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+const section = (title: string, content: string) => `
+  <div style="${emailStyles.section}">
+    <h2 style="${emailStyles.sectionTitle}">${escapeHtml(title)}</h2>
+    ${content}
+  </div>
+`;
+
+const addressBlock = (order: OrderEmailData) => `
+  <p style="${emailStyles.muted};margin:0;">
+    ${escapeHtml(order.customerName)}<br />
+    ${escapeHtml(order.shippingAddress)}<br />
+    ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
+    ${escapeHtml(order.country)}
+  </p>
+`;
+
+const orderSummaryBlock = (order: OrderEmailData) => `
+  <table role="presentation" style="${emailStyles.table}" cellPadding="0" cellSpacing="0">
+    <tr>
+      <td style="${emailStyles.td}"><strong>Order Number</strong></td>
+      <td style="${emailStyles.td};text-align:right;">${escapeHtml(order.orderNumber)}</td>
+    </tr>
+    <tr>
+      <td style="${emailStyles.td}"><strong>Email</strong></td>
+      <td style="${emailStyles.td};text-align:right;">${escapeHtml(order.customerEmail)}</td>
+    </tr>
+    <tr>
+      <td style="${emailStyles.td}"><strong>Phone</strong></td>
+      <td style="${emailStyles.td};text-align:right;">${escapeHtml(order.phone || "Not provided")}</td>
+    </tr>
+    <tr>
+      <td style="${emailStyles.totalRow}">Total</td>
+      <td style="${emailStyles.totalRow};text-align:right;">${money(order.total, order.currency)}</td>
+    </tr>
+  </table>
+`;
+
+const customerItemRows = (order: OrderEmailData) =>
   order.items
     .map(
       (item) => `
         <tr>
-          <td>${escapeHtml(item.productName)}</td>
-          <td>${escapeHtml(item.color)}</td>
-          <td>${escapeHtml(item.capacity)}</td>
-          <td>${item.quantity}</td>
-          <td>${money(item.totalPrice, order.currency)}</td>
+          <td style="${emailStyles.td}">
+            <strong>${escapeHtml(item.productName)}</strong><br />
+            <span style="color:#77716a;">${escapeHtml(item.color)} / ${escapeHtml(item.capacity)}</span>
+          </td>
+          <td style="${emailStyles.td};text-align:center;">${item.quantity}</td>
+          <td style="${emailStyles.td};text-align:right;">${money(item.totalPrice, order.currency)}</td>
         </tr>
       `
     )
     .join("");
+
+const customerItemsTable = (order: OrderEmailData) => `
+  <table role="presentation" style="${emailStyles.table}" cellPadding="0" cellSpacing="0">
+    <thead>
+      <tr>
+        <th style="${emailStyles.th}">Item</th>
+        <th style="${emailStyles.th};text-align:center;">Qty</th>
+        <th style="${emailStyles.th};text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>${customerItemRows(order)}</tbody>
+  </table>
+`;
+
+const adminItemsTable = (order: OrderEmailData) => `
+  <table role="presentation" style="${emailStyles.table}" cellPadding="0" cellSpacing="0">
+    <thead>
+      <tr>
+        <th style="${emailStyles.th}">SKU</th>
+        <th style="${emailStyles.th}">Product</th>
+        <th style="${emailStyles.th}">Qty</th>
+        <th style="${emailStyles.th};text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${order.items
+        .map(
+          (item) => `
+            <tr>
+              <td style="${emailStyles.td}">${escapeHtml(item.sku)}</td>
+              <td style="${emailStyles.td}">
+                <strong>${escapeHtml(item.productName)}</strong><br />
+                <span style="color:#77716a;">${escapeHtml(item.color)} / ${escapeHtml(item.capacity)}</span>
+              </td>
+              <td style="${emailStyles.td}">${item.quantity}</td>
+              <td style="${emailStyles.td};text-align:right;">${money(item.totalPrice, order.currency)}</td>
+            </tr>
+          `
+        )
+        .join("")}
+    </tbody>
+  </table>
+`;
 
 export async function sendEmail({ to, subject, html, replyTo }: EmailPayload) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -95,53 +271,28 @@ export async function sendEmail({ to, subject, html, replyTo }: EmailPayload) {
 
 export async function sendOrderNotification(order: OrderEmailData) {
   const to = process.env.ORDER_NOTIFY_EMAIL || process.env.CONTACT_TO_EMAIL || "support@kensyde.com";
-  const itemRows = order.items
-    .map(
-      (item) => `
-        <tr>
-          <td>${escapeHtml(item.sku)}</td>
-          <td>${escapeHtml(item.productName)}</td>
-          <td>${escapeHtml(item.color)}</td>
-          <td>${escapeHtml(item.capacity)}</td>
-          <td>${item.quantity}</td>
-          <td>${money(item.unitPrice, order.currency)}</td>
-          <td>${money(item.totalPrice, order.currency)}</td>
-        </tr>
-      `
-    )
-    .join("");
 
   return sendEmail({
     to,
     subject: `KENSYDE paid order ${order.orderNumber}`,
     replyTo: order.customerEmail,
-    html: `
-      <h2>New paid KENSYDE order</h2>
-      <p><strong>Order Number:</strong> ${escapeHtml(order.orderNumber)}</p>
-      <p><strong>Customer:</strong> ${escapeHtml(order.customerName)} (${escapeHtml(order.customerEmail)})</p>
-      <p><strong>Phone:</strong> ${escapeHtml(order.phone)}</p>
-      <p><strong>Shipping Address:</strong><br />
-        ${escapeHtml(order.shippingAddress)}<br />
-        ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
-        ${escapeHtml(order.country)}
-      </p>
-      <p><strong>Total:</strong> ${money(order.total, order.currency)}</p>
-      <p><strong>Stripe Session ID:</strong> ${escapeHtml(order.stripeSessionId || "")}</p>
-      <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-          <tr>
-            <th>SKU</th>
-            <th>Product</th>
-            <th>Color</th>
-            <th>Capacity</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>${itemRows}</tbody>
-      </table>
-    `
+    html: brandEmailTemplate({
+      eyebrow: "Admin Notification",
+      title: "New paid order",
+      intro: `A paid KENSYDE order is ready for review.`,
+      body:
+        section("Customer", orderSummaryBlock(order)) +
+        section("Ship To", addressBlock(order)) +
+        section("Items", adminItemsTable(order)) +
+        section(
+          "Payment",
+          `<p style="${emailStyles.muted};margin:0;"><strong>Stripe Session ID:</strong><br />${escapeHtml(
+            order.stripeSessionId || ""
+          )}</p>`
+        ),
+      ctaLabel: "Open Orders",
+      ctaHref: `${siteUrl}/admin/orders`
+    })
   });
 }
 
@@ -150,31 +301,21 @@ export async function sendCustomerOrderConfirmation(order: OrderEmailData) {
     to: order.customerEmail,
     subject: `KENSYDE order confirmation ${order.orderNumber}`,
     replyTo: "support@kensyde.com",
-    html: `
-      <h2>Thank you for your KENSYDE order</h2>
-      <p>Hi ${escapeHtml(order.customerName)},</p>
-      <p>Your payment has been confirmed and we are preparing your order.</p>
-      <p><strong>Order Number:</strong> ${escapeHtml(order.orderNumber)}</p>
-      <p><strong>Total:</strong> ${money(order.total, order.currency)}</p>
-      <p><strong>Shipping Address:</strong><br />
-        ${escapeHtml(order.shippingAddress)}<br />
-        ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
-        ${escapeHtml(order.country)}
-      </p>
-      <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Color</th>
-            <th>Capacity</th>
-            <th>Qty</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>${orderItemRows(order)}</tbody>
-      </table>
-      <p>For product or order support, reply to this email or contact support@kensyde.com.</p>
-    `
+    html: brandEmailTemplate({
+      eyebrow: "Order Confirmed",
+      title: "Thank you for your order",
+      intro: `Hi ${escapeHtml(order.customerName)}, your payment has been confirmed and we are preparing your KENSYDE order.`,
+      body:
+        section("Order Summary", orderSummaryBlock(order)) +
+        section("Items", customerItemsTable(order)) +
+        section("Shipping Address", addressBlock(order)) +
+        section(
+          "What happens next",
+          `<div style="${emailStyles.note}">We will send another email when your order ships. Please keep this confirmation for your records.</div>`
+        ),
+      ctaLabel: "Visit KENSYDE",
+      ctaHref: siteUrl
+    })
   });
 }
 
@@ -189,14 +330,31 @@ export async function sendCustomerRefundNotification(
     to: order.customerEmail,
     subject: `KENSYDE refund update ${order.orderNumber}`,
     replyTo: "support@kensyde.com",
-    html: `
-      <h2>Your KENSYDE order has been ${refundDescription}</h2>
-      <p>Hi ${escapeHtml(order.customerName)},</p>
-      <p>A refund of <strong>${money(refundedAmount, order.currency)}</strong> has been issued for order
-        <strong>${escapeHtml(order.orderNumber)}</strong>.</p>
-      <p>Refund timing depends on your bank or card provider.</p>
-      <p>For questions, reply to this email or contact support@kensyde.com.</p>
-    `
+    html: brandEmailTemplate({
+      eyebrow: "Refund Update",
+      title: `Your order has been ${refundDescription}`,
+      intro: `Hi ${escapeHtml(order.customerName)}, we have issued a refund update for your KENSYDE order.`,
+      body:
+        section(
+          "Refund Details",
+          `<table role="presentation" style="${emailStyles.table}" cellPadding="0" cellSpacing="0">
+            <tr>
+              <td style="${emailStyles.td}"><strong>Order Number</strong></td>
+              <td style="${emailStyles.td};text-align:right;">${escapeHtml(order.orderNumber)}</td>
+            </tr>
+            <tr>
+              <td style="${emailStyles.totalRow}">Refund Amount</td>
+              <td style="${emailStyles.totalRow};text-align:right;">${money(refundedAmount, order.currency)}</td>
+            </tr>
+          </table>`
+        ) +
+        section(
+          "Timing",
+          `<div style="${emailStyles.note}">Refund timing depends on your bank or card provider.</div>`
+        ),
+      ctaLabel: "Contact Support",
+      ctaHref: `mailto:support@kensyde.com`
+    })
   });
 }
 
@@ -209,43 +367,32 @@ export async function sendCustomerShippingNotification(
     to: order.customerEmail,
     subject: `Your KENSYDE order has shipped ${order.orderNumber}`,
     replyTo: "support@kensyde.com",
-    html: `
-      <h2>Your KENSYDE order is on the way</h2>
-      <p>Hi ${escapeHtml(order.customerName)},</p>
-      <p>Your order has shipped. Use the details below to follow its delivery progress.</p>
-      <p><strong>Order Number:</strong> ${escapeHtml(order.orderNumber)}</p>
-      <p><strong>Carrier:</strong> ${escapeHtml(carrier)}</p>
-      <p><strong>Tracking Number:</strong> ${escapeHtml(trackingNumber)}</p>
-      <p><strong>Shipping Address:</strong><br />
-        ${escapeHtml(order.shippingAddress)}<br />
-        ${escapeHtml(order.city)}, ${escapeHtml(order.state)} ${escapeHtml(order.postalCode)}<br />
-        ${escapeHtml(order.country)}
-      </p>
-      <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Color</th>
-            <th>Capacity</th>
-            <th>Qty</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${order.items
-            .map(
-              (item) => `
-                <tr>
-                  <td>${escapeHtml(item.productName)}</td>
-                  <td>${escapeHtml(item.color)}</td>
-                  <td>${escapeHtml(item.capacity)}</td>
-                  <td>${item.quantity}</td>
-                </tr>
-              `
-            )
-            .join("")}
-        </tbody>
-      </table>
-      <p>For delivery or order support, reply to this email or contact support@kensyde.com.</p>
-    `
+    html: brandEmailTemplate({
+      eyebrow: "Shipping Update",
+      title: "Your order is on the way",
+      intro: `Hi ${escapeHtml(order.customerName)}, your KENSYDE order has shipped.`,
+      body:
+        section(
+          "Tracking",
+          `<table role="presentation" style="${emailStyles.table}" cellPadding="0" cellSpacing="0">
+            <tr>
+              <td style="${emailStyles.td}"><strong>Order Number</strong></td>
+              <td style="${emailStyles.td};text-align:right;">${escapeHtml(order.orderNumber)}</td>
+            </tr>
+            <tr>
+              <td style="${emailStyles.td}"><strong>Carrier</strong></td>
+              <td style="${emailStyles.td};text-align:right;">${escapeHtml(carrier)}</td>
+            </tr>
+            <tr>
+              <td style="${emailStyles.totalRow}">Tracking Number</td>
+              <td style="${emailStyles.totalRow};text-align:right;">${escapeHtml(trackingNumber)}</td>
+            </tr>
+          </table>`
+        ) +
+        section("Items", customerItemsTable(order)) +
+        section("Shipping Address", addressBlock(order)),
+      ctaLabel: "Contact Support",
+      ctaHref: `mailto:support@kensyde.com`
+    })
   });
 }
